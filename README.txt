@@ -1,5 +1,3 @@
-# lattice_materials
-
 LINEAR 3D
 ---
 linear_3D.edp

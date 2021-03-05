@@ -1,0 +1,74 @@
+mesh   Thr = square(40,40); // reference domain to show mesh deformation
+fespace Rh(Thr,P1);
+Rh ur,vr;
+border b5(t=0,0.01){x = t; y = 0; label = 5;}
+border b1(t=0.01,1){x = t; y = 0; label = 1;}
+border b2(t=0,1   ){x = 1; y = t; label = 2;}
+border b3(t=1,0   ){x = t; y = 1; label = 3;}
+border b4(t=1,0.01){x = 0; y = t; label = 4;}
+border b6(t=0.01,0){x = 0; y = t; label = 6;}
+int n = 5;
+mesh Th = buildmesh(b5(n) + b1(8*n) + b2(8*n) + b3(8*n) + b4(8*n) + b6(n));
+plot(Th,wait=1);
+fespace Vh(Th,P1);        
+Vh u1,u2,v1,v2,u1old,u2old,du24,dv24,du13;
+real u = 1, v = 0;
+Vh ax = 1, ay = 0;
+Vh bx = 0, by = 1;
+real E = 1, nu = 0.33;
+real lambda = E*nu/(1-nu^2);        // plane stress
+//real lambda = E*nu/(1+nu)/(1-2*nu); // 3D
+real     mu = E/(2*(1+nu));
+macro eps11(u,v) [dx(u)] //
+macro eps22(u,v) [dy(v)] //
+macro eps12(u,v) [(dx(v)+dy(u))/2] //
+macro trace(u,v) [ dx(u)+dy(v)] //
+macro sig11(u,v) [2*mu*eps11(u,v) + lambda*trace(u,v)] //
+macro sig22(u,v) [2*mu*eps22(u,v) + lambda*trace(u,v)] //
+macro sig12(u,v) [2*mu*eps12(u,v)] //
+real tol = 1e-4, err = 1+tol, gamma = 1e6, coef = 0.025;
+problem tensile([u1,u2],[v1,v2]) = int2d(Th)(sig11(u1,u2)*eps11(v1,v2)
+                                           + sig22(u1,u2)*eps22(v1,v2)
+                                        +  2*sig12(u1,u2)*eps12(v1,v2))
+                                 + int1d(Th,2)(gamma*u1*v1)  
+                                 - int1d(Th,2)(gamma*(convect([ax,ay],-1,u1old)+u)*v1)
+                                 //+ int1d(Th,2)(gamma*u2*v2)  
+                                 //- int1d(Th,2)(gamma*(convect([ax,ay],-1,u2old)  )*v2)
+                                 + int1d(Th,3)(gamma*u1*v1)  
+                                 - int1d(Th,3)(gamma*(convect([bx,by],-1,u1old)  )*v1)
+                                 //+ int1d(Th,3)(gamma*u2*v2)  
+                                 //- int1d(Th,3)(gamma*(convect([bx,by],-1,u2old)+v)*v2)
+                                 + on(5,u2=0) + on(6,u1=0);                      
+                                 //+ on(6,u1=0) + on(5,u2=0) + on(2,u2=1);
+u1old = 1; u2old = 1;
+while(err > tol)
+{
+  tensile;
+  err = sqrt(int2d(Th)((u1-u1old)^2 + (u2-u2old)^2));
+  cout << "err = " << err << endl;  
+  u1old = u1; u2old = u2;
+}
+real d1 = int1d(Th,2)(u1 - convect([ax,ay],-1,u1));
+real d2 = int1d(Th,3)(u2 - convect([bx,by],-1,u2));
+cout << "d1 = " << d1 << endl;
+cout << "d2 = " << d2 << endl;
+cout << "estimated nu = " << -d2/d1 << endl; 
+plot(u1,fill=1,dim=3,cmm="u1");
+plot(u2,fill=1,dim=3,cmm="u2");
+
+for (int i=0; i<10; i++)
+{
+  real s = i/10.;
+  cout << u1(1,s)-u1(0,s) << " " << u2(1,s)-u2(0,s) << " " << u1(s,1)-u1(s,0) << " " << u2(s,1)-u2(s,0) <<endl;
+}
+
+ur = u1; vr = u2;
+plot([ur,vr],wait=1);
+mesh Thd = movemesh(Thr,[x+coef*ur,y+coef*vr]);
+plot(Th,Thd);
+/*
+du24 = u1 - convect([ax,ay],-1,u1);
+plot(du24,dim=3,fill=1);
+dv24 = u2 - convect([ax,ay],-1,u2);
+du13 = u1 - convect([bx,by],-1,u1);
+*/
