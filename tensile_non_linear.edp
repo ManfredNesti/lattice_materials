@@ -1,5 +1,7 @@
 // https://doc.freefem.org/models/non-linear-elasticity.html
-ofstream out("tensile_non_linear.csv", append); //file per output con epsilon11,sigma11,epsilon12,sigma12,epsilon22,sigma22
+ofstream out("tensile_non_linear.csv", append); //file per output
+
+real nl = 0; //1 if non-linear, 0 otherwise
 // Macro
 // parte lineare di epsilon
 macro EL(u, v) [dx(u), (dx(v)+dy(u)), dy(v)] // is [epsilon_11, 2epsilon_12, epsilon_22]
@@ -27,13 +29,13 @@ macro dENL(u, v, uu, vv) [
     (dy(u)*dy(uu) + dy(v)*dy(vv))
     ] //
 // epsilon (lineare + non lineare) (con derivate)
-macro E(u, v) (EL(u,v) + ENL(u,v)) //is [E_11, 2E_12, E_22]
-macro E11(u, v) (EL11(u,v) + ENL11(u,v)) //
-macro E12(u, v) (EL12(u,v) + ENL12(u,v)) //
-macro E22(u, v) (EL22(u,v) + ENL22(u,v)) //
+macro E(u, v) (EL(u,v) + nl * ENL(u,v)) //is [E_11, 2E_12, E_22]
+macro E11(u, v) (EL11(u,v) + nl * ENL11(u,v)) //
+macro E12(u, v) (EL12(u,v) + nl * ENL12(u,v)) //
+macro E22(u, v) (EL22(u,v) + nl * ENL22(u,v)) //
 
-macro dE(u, v, uu, vv) (EL(uu, vv) + dENL(u, v, uu, vv)) //
-macro ddE(u, v, uu, vv, uuu, vvv) dENL(uuu, vvv, uu, vv) //
+macro dE(u, v, uu, vv) (EL(uu, vv) + nl* dENL(u, v, uu, vv)) //
+macro ddE(u, v, uu, vv, uuu, vvv) (nl * dENL(uuu, vvv, uu, vv)) //
 // energia F2: A(E,E) = E' * A * E (con derivate)
 macro F2(u, v) (E(u, v)'*A*E(u, v)) //
 macro dF2(u, v, uu, vv) (E(u, v)'*A*dE(u, v, uu, vv)*2.) //
@@ -66,7 +68,7 @@ real mu = Ecoeff/(2*(1+nu));
 // real mu = 0.012e5; //kg/cm^2
 // real lambda = 0.4e5; //kg/cm^2
 real coef = 0.1;
-real  u = 1,  v = -0.1; //traction bc
+real  u = 0.5,  v = -0.1; //traction bc
 // Mesh & Fespace
 
 mesh   Th = square(20,20);
@@ -80,9 +82,9 @@ Wh e2, fe2, dfe2, ddfe2;
 
 fespace Vh(Th, [P1, P1]);
 Vh
-[uu, vv] = [u*(x>=1), 0], // soluzione di NonLin (du, dv) (iterazione precedente)
+[uu, vv] = [0, 0], // soluzione di NonLin (du, dv) (iterazione precedente)
 [w, s], // funzioni test
-[un, vn] = [0, 0]; // spostamento (un, vn) (iterazione attuale)
+[un, vn] = [u*(x>=1), 0]; // spostamento (un, vn) (iterazione attuale)
 // update: (un, vn) =- (du, dv)
 
 fespace Sh(Th, P1);
@@ -186,13 +188,17 @@ real d1 = int1d(Th,2)(un) - int1d(Th,4)(un);
 real d2 = int1d(Th,3)(vn) - int1d(Th,1)(vn);;
 cout << "d1 = " << d1 << endl;
 cout << "d2 = " << d2 << endl;
-cout << "estimated nu = " << -d2/d1 << endl;
+real nu12 = -d2/d1;
+cout << "estimated nu = " << nu12 << endl;
 
 //output
+//epsilon11,epsilon12,epsilon22,sigma11,sigma12,sigma22,nu12,nl(=1 se non lineare, 0 lineare)
 out << int2d(Th) (rho*E11(un,vn)) << ",";
-out << int2d(Th) (rho*sigma11(un,vn)) << ",";
 out << int2d(Th) (rho*E12(un,vn)) << ",";
-out << int2d(Th) (rho*sigma12(un,vn)) << ",";
 out << int2d(Th) (rho*E22(un,vn)) << ",";
+out << int2d(Th) (rho*sigma11(un,vn)) << ",";
+out << int2d(Th) (rho*sigma12(un,vn)) << ",";
 out << int2d(Th) (rho*sigma22(un,vn)) << ",";
+out << nu12 << ",";
+out << nl << ",";
 out << endl;

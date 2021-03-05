@@ -1,4 +1,4 @@
-ofstream out("tensile_nu.csv", append); //file per output con epsilon11,sigma11,epsilon12,sigma12,epsilon22,sigma22
+ofstream out("tensile_nu.csv", append); //file per output epsilon11,epsilon12,epsilon22,sigma12,nu12(,nu21 non ha senso ...)
 mesh   Th = square(20,20); // reference domain to show mesh deformation
 fespace Vh(Th,[P1,P1]);
 Vh [u1,u2], [v1,v2], [lam1,lam2], [mu1,mu2], [u1old,u2old];
@@ -62,10 +62,13 @@ for (int i=0; i<10; i++)
   cout << u1(1,s)-u1(0,s) << " " << u2(1,s)-u2(0,s) << " " << u1(s,1)-u1(s,0) << " " << u2(s,1)-u2(s,0) <<endl;
 }
 
+//epsilon11,epsilon12,epsilon22,sigma11,sigma12,sigma22,nu12
 out << int2d(Th) (rho*eps11(u1,u2)) << ",";
-out << int2d(Th) (rho*sig11(u1,u2)) << ",";
 out << int2d(Th) (rho*eps12(u1,u2)) << ",";
-out << int2d(Th) (rho*sig12(u1,u2)) << ",";
 out << int2d(Th) (rho*eps22(u1,u2)) << ",";
+out << int2d(Th) (rho*sig11(u1,u2)) << ",";
+out << int2d(Th) (rho*sig12(u1,u2)) << ",";
 out << int2d(Th) (rho*sig22(u1,u2)) << ",";
+out << nu12 << ",";
+//  out << nu21 << ",";
 out << endl;
