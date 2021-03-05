@@ -1,4 +1,4 @@
-ofstream out("tensile_periodico.csv", append); //file per output
+ofstream out("tensile_periodico.csv", append); //file per output epsilon11,epsilon12,epsilon22,sigma12,nu12(,nu21 non ha senso ...)
 mesh   Th = square(20,20); // reference domain to show mesh deformation
 fespace Wh(Th,[P1,P1]);
 Wh [u1,u2], [v1,v2], [lam1,lam2], [mu1,mu2], [u1old,u2old];
@@ -68,7 +68,8 @@ real d1 = int1d(Th,2)(u1 - convect([ax,ay],-1,u1));
 real d2 = int1d(Th,3)(u2 - convect([bx,by],-1,u2));
 cout << "d1 = " << d1 << endl;
 cout << "d2 = " << d2 << endl;
-cout << "estimated nu = " << -d2/d1 << endl;
+real nu12 = -d2/d1;
+cout << "estimated nu = " << nu12 << endl;
 plot(u1,fill=1,dim=3,cmm="u1",wait=1);
 plot(u2,fill=1,dim=3,cmm="u2",wait=1);
 
@@ -88,10 +89,11 @@ dv24 = u2 - convect([ax,ay],-1,u2);
 du13 = u1 - convect([bx,by],-1,u1);
 */
 
+//epsilon11,epsilon12,epsilon22,sigma12,nu12,nu21
 out << int2d(Th) (eps11(u1,u2)) << ",";
-out << int2d(Th) (sig11(u1,u2)) << ",";
 out << int2d(Th) (eps12(u1,u2)) << ",";
-out << int2d(Th) (sig12(u1,u2)) << ",";
 out << int2d(Th) (eps22(u1,u2)) << ",";
-out << int2d(Th) (sig22(u1,u2)) << ",";
+out << int2d(Th) (sig12(u1,u2)) << ",";
+out << nu12 << ",";
+//  out << nu21 << ",";
 out << endl;

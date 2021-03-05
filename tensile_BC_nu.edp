@@ -48,7 +48,8 @@ real d1 = int1d(Th,2)(rho*u1) - int1d(Th,4)(rho*u1);
 real d2 = int1d(Th,3)(rho*u2) - int1d(Th,1)(rho*u2);;
 cout << "d1 = " << d1 << endl;
 cout << "d2 = " << d2 << endl;
-cout << "estimated nu = " << -d2/d1 << endl;
+real nu12 = -d2/d1;
+cout << "estimated nu = " << nu12 << endl;
 plot(u1,fill=1,dim=3,wait = 1, cmm="u1");
 plot(u2,fill=1,dim=3,wait = 1, cmm="u2");
 

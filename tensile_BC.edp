@@ -1,4 +1,4 @@
-ofstream out("Tensile_BC.csv", append); //file per output con epsilon11,sigma11,epsilon12,sigma12,epsilon22,sigma22
+ofstream out("Tensile_BC.csv", append); //file per output con epsilon11,epsilon12,epsilon22,sigma12,nu12,nu21
 mesh   Th = square(20,20); // reference domain to show mesh deformation
 fespace Vh(Th,[P1,P1]);
 Vh [u1,u2], [v1,v2], [lam1,lam2], [mu1,mu2], [u1old,u2old];
@@ -48,7 +48,8 @@ real d1 = int1d(Th,2)(rho*(u1 - convect([ax,ay],-1,u1)));
 real d2 = int1d(Th,3)(rho*(u2 - convect([bx,by],-1,u2)));
 cout << "d1 = " << d1 << endl;
 cout << "d2 = " << d2 << endl;
-cout << "estimated nu = " << -d2/d1 << endl;
+real nu12 = -d2/d1;
+cout << "estimated nu = " << nu12 << endl;
 plot(u1,fill=1,dim=3,wait = 1, cmm="u1");
 plot(u2,fill=1,dim=3,wait = 1, cmm="u2");
 
