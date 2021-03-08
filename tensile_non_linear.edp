@@ -68,7 +68,7 @@ real mu = Ecoeff/(2*(1+nu));
 // real mu = 0.012e5; //kg/cm^2
 // real lambda = 0.4e5; //kg/cm^2
 real coef = 0.1;
-real  u = 0.5,  v = -0.1; //traction bc
+real  u = 0.1,  v = -0.1; //traction bc
 // Mesh & Fespace
 
 mesh   Th = square(20,20);
