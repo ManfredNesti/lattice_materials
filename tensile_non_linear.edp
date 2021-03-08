@@ -55,9 +55,7 @@ macro sigma12(u,v) (2*mu*E12(u,v)) //
 macro sigma22(u,v) (2*mu*E22(u,v) + lambda*trE(u,v)) //
 
 // Parameters
-real rho = 1; ///set density equal to 1 where rho in fespace
 real q = 4.; //power for pensalty method
-
 real  vold;
 real Pa = 0; //no forces
 
@@ -68,13 +66,14 @@ real mu = Ecoeff/(2*(1+nu));
 // real mu = 0.012e5; //kg/cm^2
 // real lambda = 0.4e5; //kg/cm^2
 real coef = 0.1;
-real  u = 0.1,  v = -0.1; //traction bc
+real  u = 1.,  v = -0.1; //traction bc
 // Mesh & Fespace
 
 mesh   Th = square(20,20);
 fespace Xh(Th,P1);
 fespace Xhp(Th, P1,       periodic = [[2,y],[4,y],[1,x],[3,x]]); //fespace for density (need to be periodic?)
-// Xhp rho;
+Xhp rho;
+rho = 1; ///set density equal to 1 where rho in fespace
 
 //for evalutaion of F2 and its derivatives
 fespace Wh(Th, P1dc); //spazio discontinuo perchè?

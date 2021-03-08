@@ -7,11 +7,11 @@ fespace Xhp(Th, P1,       periodic = [[2,y],[4,y],[1,x],[3,x]]); //fespace for d
 Xhp rho;
 real q = 4.; //power for pensalty method
 rho = 1; ///set density equal to 1
-real  u = 2.,  v = -0.1;
+real  u = 0.05,  v = -0.1;
 real  vold;
 Xh   ax = 1, ay = 0;
 Xh   bx = 0, by = 1;
-Xh    E = 1;//+sin(5*pi*x)^2;
+Xh    E = 0.0072;//+sin(5*pi*x)^2;
 real nu = 0.3;
 plot(E,fill=1,dim=3,wait = 1, cmm="E");
 Xh lambda = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu);
