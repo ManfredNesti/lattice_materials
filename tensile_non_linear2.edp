@@ -164,12 +164,5 @@ real nu12 = -d2/d1;
 cout << "estimated nu = " << nu12 << endl;
 
 //output
-//epsilon11,epsilon12,epsilon22,sigma11,sigma12,sigma22,nu12,nl(=1 se non lineare, 0 lineare)
-out << int2d(Th) (rho*E11(u1,u2)) << ",";
-out << int2d(Th) (rho*E12(u1,u2)) << ",";
-out << int2d(Th) (rho*E22(un,vn)) << ",";
-out << int2d(Th) (rho*sigma11(u1,u2)) << ",";
-out << int2d(Th) (rho*sigma12(u1,u2)) << ",";
-out << int2d(Th) (rho*sigma22(u1,u2)) << ",";
 out << nu12 << ",";
 out << endl;

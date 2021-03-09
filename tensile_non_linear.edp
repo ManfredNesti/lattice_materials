@@ -1,7 +1,7 @@
 // https://doc.freefem.org/models/non-linear-elasticity.html
 ofstream out("tensile_non_linear.csv", append); //file per output
 
-real nl = 0; //1 if non-linear, 0 otherwise
+real nl = 1.; //1 if non-linear, 0 otherwise
 // Macro
 // parte lineare di epsilon
 macro EL(u, v) [dx(u), (dx(v)+dy(u)), dy(v)] // is [epsilon_11, 2epsilon_12, epsilon_22]
@@ -44,9 +44,13 @@ macro ddF2(u, v, uu, vv, uuu, vvv) (
     + (E(u, v)'*A*ddE(u, v, uu, vv, uuu, vvv))*2.
     ) //
 // f funzione di F2 (sceglie 0.25 * u^2 ovvero 0.25 * F2^2)
-macro f(u) ((u)*(u)*0.25) //
-macro df(u) ((u)*0.5) //
-macro ddf(u) (0.5) //
+// macro f(u) ((u)*(u)*0.25) //
+// macro df(u) ((u)*0.5) //
+// macro ddf(u) (0.5) //
+// f lineare: f = energia = u
+macro f(u) (u) //
+macro df(u) (1.0) //
+macro ddf(u) (0.) //
 
 //sigma = 2 mu E + lambda tr(E) Id
 macro trE(u,v) (E11(u,v) + E22(u,v)) //
@@ -114,7 +118,7 @@ matrix M = vmass(Vh, Vh);
 problem NonLin([uu, vv], [w, s], solver=LU)
     // D^2 J(un, vn) * ((w,s),(du,dv))
     = int2d(Th, qforder=1)(rho^q*(dF2(un, vn, uu, vv)*dF2(un, vn, w, s)*ddfe2
-                           + ddF2(un, vn, uu, vv, w, s)*ddfe2)
+                           + ddF2(un, vn, uu, vv, w, s)*dfe2) //correzione bug -> non va con f=u^2, sì con f=u
     )
     // - DJ(un, vn) (w,s)
     - int1d(Th, 3)(

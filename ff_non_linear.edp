@@ -92,7 +92,7 @@ problem NonLin([uu, vv], [w, s], solver=LU)
     // D^2 J(un, vn) * ((w,s),(du,dv))
     = int2d(Th, qforder=1)(
            dF2(un, vn, uu, vv)*dF2(un, vn, w, s)*ddfe2
-        + ddF2(un, vn, uu, vv, w, s)*ddfe2
+        + ddF2(un, vn, uu, vv, w, s)*dfe2 //correzione bug -> non va
     )
     // - DJ(un, vn) (w,s)
     - int1d(Th, upper)(
