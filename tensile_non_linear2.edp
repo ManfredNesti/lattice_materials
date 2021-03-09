@@ -3,7 +3,7 @@ ofstream out("tensile_non_linear2.csv", append); //file per output
 
 // Macro
 //Deformation gradient F
-macro F11(u1,u2)	(dx(u1)+1.0) //
+macro F11(u1,u2)	(1.0 + dx(u1)) //
 macro F12(u1,u2) (dy(u1)) //
 macro F21(u1,u2) (dx(u2)) //
 macro F22(u1,u2) (dy(u2) + 1.0) //
