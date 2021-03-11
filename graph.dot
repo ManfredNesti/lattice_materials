@@ -1,6 +1,4 @@
 digraph G {
-  compound=true;
-
   subgraph cluster_case1_linear {
   label="LINEAR"
   case1

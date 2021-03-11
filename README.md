@@ -17,6 +17,7 @@
 * __nonlinear2.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro), con energia4
 
 LINK EXAMPLE: [Vai a Google](https://www.google.com)
+![Google](https://www.google.it/images/branding/googlelogo/2x/googlelogo_color_160x56dp.png)
 
 ## Hints
 Plottando sigma vs epsilon (? interpretazione grafici di Sigmund è problematica), dovrebbe venire una retta indep da u0
@@ -31,10 +32,8 @@ __BCs__:
 * __Bordo destro__: trazione = Dirichlet u = [u0 , 0]  -> v = int1d(bordo di sopra) (u)/ lunghezza_bordo di sopra (per convertire valore nodale in un valore singolo sul bordo di sopra)
 * __Bordo sinistro__: simmetria u.n = 0
 
-![Alt text](https://g.gravizo.com/svg?
+![Graph](https://g.gravizo.com/svg?
   digraph G {
-    compound=true;
-
     subgraph cluster_case1_linear {
     label="LINEAR"
     case1
