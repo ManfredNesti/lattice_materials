@@ -38,7 +38,7 @@ int main() {
 __BCs di Nicola__:
 
 * __B__: Neumann omogeneo
-* __D__: trazione = Dirichlet u = [u0 , 0]  -> v = int1d(bordo di sopra) (u)/ lunghezza_bordo di sopra (per convertire valore nodale in un valore singolo sul bordo di sopra)
+* __R__: trazione = Dirichlet u = [u0 , 0]  -> v = int1d(bordo di sopra) (u)/ lunghezza_bordo di sopra (per convertire valore nodale in un valore singolo sul bordo di sopra)
 * __T__: Neumann omogeneo
 * __L__: simmetria u.n = 0
 
