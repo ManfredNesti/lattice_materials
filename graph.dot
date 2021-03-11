@@ -17,7 +17,7 @@ digraph G {
 
   subgraph cluster_non_linear {
     label="NON LINEAR"
-    tensile_BC_nu -> tensile_non_linear;
+    tensile_nu -> tensile_non_linear;
     ff_non_linear -> tensile_non_linear -> tensile_non_linear_e1;
     tensile_non_linear -> tensile_non_linear_e4;
   }
