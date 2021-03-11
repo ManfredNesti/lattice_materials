@@ -1,6 +1,6 @@
-# Lattice materials
+# Lattice materials LINK [Report NAPDE](https://www.overleaf.com/project/6033cb6252d38a235a8b57a5)
 
-## Non linear 2D
+## Non linear 2D [Flowchart](https://www.overleaf.com/project/60409aad8f184877680367ce)
 
 ![Graph](https://g.gravizo.com/svg?digraph%20G%20%7B%0A%20%20subgraph%20cluster_case1_linear%20%7B%0A%20%20label%3D%22LINEAR%22%0A%20%20case1%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_case1_non_linear%20%7B%0A%20%20label%3D%22NON%20LINEAR%22%0A%20%20case1%20-%3E%20case1_non_linear1%20-%3E%20case1_non_linear2%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_linear%20%7B%0A%20%20%20%20label%3D%22LINEAR%22%0A%20%20%20%20tensile%20-%3E%20tensile_BC%20-%3E%20tensile_BC_nu%3B%0A%20%20%20%20tensile%20-%3E%20tensile_nu%20-%3E%20tensile_BC_nu%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_non_linear%20%7B%0A%20%20%20%20label%3D%22NON%20LINEAR%22%0A%20%20%20%20tensile_BC_nu%20-%3E%20tensile_non_linear%3B%0A%20%20%20%20ff_non_linear%20-%3E%20tensile_non_linear%20-%3E%20tensile_non_linear_e1%3B%0A%20%20%20%20tensile_non_linear%20-%3E%20tensile_non_linear_e4%3B%0A%20%20%7D%0A%7D%0A)
 
@@ -44,5 +44,5 @@ __BCs di Nicola__:
 
 Noi stiamo lasciando lo spostamento verticale libero a DX
 
-## Linear 3D
+## Linear 3D [Estensione 3D](https://www.overleaf.com/project/60409af88f18480fab036998)
 * __linear_3D.edp__
