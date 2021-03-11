@@ -33,26 +33,5 @@ __BCs__:
 * __Bordo sinistro__: simmetria u.n = 0
 
 <img src='https://g.gravizo.com/svg?
-  digraph G {
-    subgraph cluster_case1_linear {
-    label="LINEAR"
-    case1
-    }
-    subgraph cluster_case1_non_linear {
-    label="NON LINEAR"
-    case1 -> case1_nonlinear1 -> case1_nonlinear2;
-    }
-    subgraph cluster_linear {
-      label="LINEAR"
-      tensile;
-      tensile_periodico -> tensile_BC -> tensile_BC_nu;
-      tensile_periodico -> tensile_nu -> tensile_BC_nu;
-    }
-    subgraph cluster_non_linear {
-      label="NON LINEAR"
-      tensile_BC_nu -> tensile_non_linear;
-      ff_non_linear -> tensile_non_linear -> tensile_non_linear_e1;
-      tensile_non_linear -> tensile_non_linear_e4;
-    }
-  }
+%20%20digraph%20G%20%7B%0A%20%20%20%20subgraph%20cluster_case1_linear%20%7B%0A%20%20%20%20label%3D%22LINEAR%22%0A%20%20%20%20case1%0A%20%20%20%20%7D%0A%20%20%20%20subgraph%20cluster_case1_non_linear%20%7B%0A%20%20%20%20label%3D%22NON%20LINEAR%22%0A%20%20%20%20case1%20-%3E%20case1_nonlinear1%20-%3E%20case1_nonlinear2%3B%0A%20%20%20%20%7D%0A%20%20%20%20subgraph%20cluster_linear%20%7B%0A%20%20%20%20%20%20label%3D%22LINEAR%22%0A%20%20%20%20%20%20tensile%3B%0A%20%20%20%20%20%20tensile_periodico%20-%3E%20tensile_BC%20-%3E%20tensile_BC_nu%3B%0A%20%20%20%20%20%20tensile_periodico%20-%3E%20tensile_nu%20-%3E%20tensile_BC_nu%3B%0A%20%20%20%20%7D%0A%20%20%20%20subgraph%20cluster_non_linear%20%7B%0A%20%20%20%20%20%20label%3D%22NON%20LINEAR%22%0A%20%20%20%20%20%20tensile_BC_nu%20-%3E%20tensile_non_linear%3B%0A%20%20%20%20%20%20ff_non_linear%20-%3E%20tensile_non_linear%20-%3E%20tensile_non_linear_e1%3B%0A%20%20%20%20%20%20tensile_non_linear%20-%3E%20tensile_non_linear_e4%3B%0A%20%20%20%20%7D%0A%20%20%7D
 '>
