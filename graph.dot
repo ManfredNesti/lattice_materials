@@ -6,14 +6,13 @@ digraph G {
 
   subgraph cluster_case1_non_linear {
   label="NON LINEAR"
-  case1 -> case1_nonlinear1 -> case1_nonlinear2;
+  case1 -> case1_non_linear1 -> case1_non_linear2;
   }
 
   subgraph cluster_linear {
     label="LINEAR"
-    tensile;
-    tensile_periodico -> tensile_BC -> tensile_BC_nu;
-    tensile_periodico -> tensile_nu -> tensile_BC_nu;
+    tensile -> tensile_BC -> tensile_BC_nu;
+    tensile -> tensile_nu -> tensile_BC_nu;
   }
 
   subgraph cluster_non_linear {
