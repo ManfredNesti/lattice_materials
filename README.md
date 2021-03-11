@@ -19,7 +19,7 @@ __Progressi__:
 * Abbiamo preso il problema linear di trazione di Micheletti (tensile.edp) e provato a mettere le BC di Nicola (__tensile_BC.edp__) e a calcolare nu con la formula di Sigmund anziché con convect (__tensile_nu.edp__) anche congiuntamente (__tensile_BC_nu.edp__)
 * Abbiamo abbandonato le BC di Nicola e mantenuto il nostro calcolo di nu con la formula di Sigmund anziché convect (__tensile_nu.edp__)
 * Il problema lineare di trazione di Micheletti con il nostro nu sembra funzionare sempre, nu viene 0.3 indipendentemente dallo spostamento imposto u0
-* Abbiamo studiato il codice del problema non lineare dalla documentazione di FreeFemm (__ff_non_linear.edp__), correggendo il bug segnalato da Michelletti e impostando f funzione dell'energia F2 a f(F2) = F2, perché non ci interessa studiare una particolare funzione dell'energia
+* Abbiamo studiato il codice del problema non lineare dalla documentazione di FreeFem (__ff_non_linear.edp__), correggendo il bug segnalato da Michelletti e impostando f funzione dell'energia F2 a f(F2) = F2, perché non ci interessa studiare una particolare funzione dell'energia
 * La correzione del bug insieme a f come sopra funziona, se invece correggiamo il bug ma lasciando f(F2) = 0.25 * F2^2 non funziona più
 * Abbiamo provato a risolvere con il codice non lineare lo stesso problema di trazione di Micheletti (__tensile_non_linear.edp__)
 * Con il parametro nl = {0: lineare, 1: non lineare} davanti alla componente non lineare di epsilon abbiamo verificato che nu torna 0.3 anche con il codice non lineare, quindi è consistente con la soluzione di Micheletti, mentre nel problema non lineare viene nu = 0.68 che teniamo come riferimento per testare il problema primale non lineare ricavato da noi
