@@ -1,7 +1,7 @@
 // https://doc.freefem.org/models/non-linear-elasticity.html
 ofstream out("tensile_non_linear.csv", append); //file per output
 
-real nl = 1.; //1 if non-linear, 0 otherwise
+real nl = 0.; //1 if non-linear, 0 otherwise
 // Macro
 // parte lineare di epsilon
 macro EL(u, v) [dx(u), (dx(v)+dy(u)), dy(v)] // is [epsilon_11, 2epsilon_12, epsilon_22]

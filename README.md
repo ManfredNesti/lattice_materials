@@ -10,8 +10,8 @@
 * __tensile_BC_nu.edp__: modello lineare di Micheletti, BC di Nicola, nu calcolato con formula 3 paper non lineare Sigmund
 * __ff_non_linear.edp__: problema non lineare dalla documentazione di FreeFem
 * __tensile_non_linear.edp__: stesso problema di trazione di Micheletti nel modello non lineare di FreeFem, f(F2) = F2, parametro nl = {0: lineare, 1: non lineare}
-* __tensile_non_linear_e1.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia1
-* __tensile_non_linear_e2.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia4
+* __tensile_non_linear_e1.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia1 (ANCORA DA FARE, FORSE NON SERVE)
+* __tensile_non_linear_e4.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia4 (NON FINITO)
 * __case1_non_linear1.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro) (probabilmente i nomi con _ sono da cambiare), direi con energia1 (iniziato ma interrotto perchè scrivendo i pb primali componente per componente non ci tornavano cose)
 * __case1_non_linear2.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro), con energia4
 
@@ -20,7 +20,7 @@ __Progressi__:
 * Abbiamo abbandonato le BC di Nicola e mantenuto il nostro calcolo di nu con la formula di Sigmund anziché convect (__tensile_nu.edp__)
 * Il problema lineare di trazione di Micheletti con il nostro nu sembra funzionare sempre, nu viene 0.3 indipendentemente dallo spostamento imposto u0
 * Abbiamo studiato il codice del problema non lineare dalla documentazione di FreeFem (__ff_non_linear.edp__), correggendo il bug segnalato da Michelletti e impostando f funzione dell'energia F2 a f(F2) = F2, perché non ci interessa studiare una particolare funzione dell'energia
-* La correzione del bug insieme a f come sopra funziona, se invece correggiamo il bug ma lasciando f(F2) = 0.25 * F2^2 non funziona più
+* La correzione del bug insieme a f identità come sopra funziona, se invece correggiamo il bug ma lasciando f(F2) = 0.25 * F2^2 non funziona più (nè il pb della doc di Freefem nè il nostro)
 * Abbiamo provato a risolvere con il codice non lineare lo stesso problema di trazione di Micheletti (__tensile_non_linear.edp__)
 * Con il parametro nl = {0: lineare, 1: non lineare} davanti alla componente non lineare di epsilon abbiamo verificato che nu torna 0.3 anche con il codice non lineare, quindi è consistente con la soluzione di Micheletti, mentre nel problema non lineare viene nu = 0.68 che teniamo come riferimento per testare il problema primale non lineare ricavato da noi
 * Stiamo a verificare il nostro problema primale con il non lineare di FreeFem (__tensile_non_linear_e1.edp__ e __tensile_non_linear_e4.edp__) (deve tornare nu = 0.68 facendo la stessa prova di trazione) ma siamo bloccato per un problema di 1.0 + dx(u1) in una macro, sembra errore di somma tra oggetti diversi
