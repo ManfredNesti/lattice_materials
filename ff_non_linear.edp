@@ -28,6 +28,10 @@ macro ddF2(u, v, uu, vv, uuu, vvv) (
 macro f(u) ((u)*(u)*0.25) //
 macro df(u) ((u)*0.5) //
 macro ddf(u) (0.5) //
+// // f lineare ma ok con correzione bug
+// macro f(u) (u) //
+// macro df(u) (1.0) //
+// macro ddf(u) (0.) //
 
 // Parameters
 real mu = 0.012e5; //kg/cm^2

@@ -2,26 +2,32 @@
 ofstream out("tensile_non_linear2.csv", append); //file per output
 
 // Macro
+//Gradient of a vector field (u1, u2)
+macro grad11(u1, u2) (dx(u1)) //
+macro grad12(u1, u2) (dy(u1)) // grad21 secondo freefem doc ... sec me sbaglia
+macro grad21(u1, u2) (dx(u2)) // grad12 secondo freefem doc ... sec me sbaglia
+macro grad22(u1, u2) (dy(u2)) //
+
 //Deformation gradient F
-macro F11(u1,u2)	(1.0 + dx(u1)) //
-macro F12(u1,u2) (dy(u1)) //
-macro F21(u1,u2) (dx(u2)) //
-macro F22(u1,u2) (dy(u2) + 1.0) //
+macro F11(u1,u2) (1.0 + grad11(u1,u2)) //
+macro F12(u1,u2) (0.0 + grad12(u1,u2)) //
+macro F21(u1,u2) (0.0 + grad21(u1,u2)) //
+macro F22(u1,u2) (1.0 + grad22(u1,u2)) //
 // Components Green-Lagrange strain tensor E
-macro E11 (u1,u2) 0.5*(dx(u1)*dx(u1) + 2.*dx(u1) + dx(u2)*dx(u2)) //
-macro E12 (u1,u2) 0.5*(dx(u1)*dy(u1) + dx(u2)*dy(u2) + dy(u1) + dx(u2) - 1.) //
-macro E21 (u1,u2) 0.5*(dx(u1)*dy(u1) + dx(u2)*dy(u2) + dy(u1) + dx(u2) - 1.) //
-macro E22 (u1,u2) 0.5*(dy(u1)*dy(u1) + 2.*dy(u2) + dy(u2)*dy(u2)) //
+macro E11 (u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
+macro E12 (u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2) - 1.) //
+macro E21 (u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2) - 1.) //
+macro E22 (u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
 
 macro traceE(u1,u2)	(E11(u1,u2) + E22(u1, u2)) // Trace of Green-Lagrange tensor
 macro detF(u1,u2) (F11(u1,u2)* F22(u1,u2) - F12(u1,u2)* F21(u1,u2) ) //
-//macro detF(u1,u2) (1 + dx(u1) + dy(u2) + dx(u1)*dy(u2) - dy(u1)*dx(u2)) //J determinant of F
+//macro detF(u1,u2) (1 + grad11(u1,u2 + grad22(u1,u2) + grad11(u1,u2*grad22(u1,u2) - grad12(u1,u2*grad21(u1,u2)) //J determinant of F
 
 //Right Cauchy-Green deformation tensor C
-macro C11(u1,u2) ((dx(u1)+1.0)^2+dx(u2)^2 ) //
-macro C12(u1,u2) ((dx(u1)+1.0)*dy(u1) + dx(u2)*(dy(u2) + 1.0)) //
-macro C21(u1,u2) ((dx(u1)+1.0)*dy(u1) + dx(u2)*(dy(u2) + 1.0)) //
-macro C22(u1,u2) ((dy(u2)+1.0)^2+dy(u1)^2 ) //
+macro C11(u1,u2) ((grad11(u1,u2)+1.0)^2+grad21(u1,u2)^2 ) //
+macro C12(u1,u2) ((grad11(u1,u2)+1.0)*grad12(u1,u2) + grad21(u1,u2)*(grad22(u1,u2) + 1.0)) //
+macro C21(u1,u2) ((grad11(u1,u2)+1.0)*grad12(u1,u2) + grad21(u1,u2)*(grad22(u1,u2) + 1.0)) //
+macro C22(u1,u2) ((grad22(u1,u2)+1.0)^2+grad12(u1,u2)^2 ) //
 
 macro detC(u1,u2) ((2*E11(u1,u2)+1)*(2*E22(u1,u2)+1) - 4 * E12(u1,u2) * E21(u1,u2)) // determinantof C
 //Inverse of C: C^-1 (simmetryc)
@@ -50,10 +56,10 @@ macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
 macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
 
 //dEij(u1,u2)/du * lambda (l'ho corretto: CI ERAVAMO PERSI UN *0.5 PER STRADA?)
-macro gradE11 (u1,u2,l1,l2) (dx(u1)*dx(l1) + dx(u2)*dx(l2) + dx(l1)) //
-macro gradE12 (u1,u2,l1,l2) (0.5*(dx(u1)*dy(l1) + dx(u2)*dy(l2) + dy(u1)*dx(l1) + dy(u2)*dx(l2) + dy(l1) + dx(l2))) //
-macro gradE21 (u1,u2,l1,l2) (0.5*(dx(u1)*dy(l1) + dx(u2)*dy(l2) + dy(u1)*dx(l1) + dy(u2)*dx(l2) + dy(l1) + dx(l2))) //
-macro gradE22 (u1,u2,l1,l2) (dy(u1)*dy(l1) + dy(u2)*dy(l2) + dy(l2)) //
+macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*dx(l1) + grad21(u1,u2)*dx(l2) + dx(l1)) //
+macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*dy(l1) + grad21(u1,u2)*dy(l2) + grad12(u1,u2)*dx(l1) + grad22(u1,u2)*dx(l2) + dy(l1) + dx(l2))) //
+macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*dy(l1) + grad21(u1,u2)*dy(l2) + grad12(u1,u2)*dx(l1) + grad22(u1,u2)*dx(l2) + dy(l1) + dx(l2))) //
+macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*dy(l1) + grad22(u1,u2)*dy(l2) + dy(l2)) //
 
 //d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (this is the test function)
 macro grad2E11 (phi1,phi2,l1,l2) (gradE11(phi1,phi2,l1,l2)) //
@@ -89,18 +95,26 @@ fespace Vh(Th, [P1, P1]);
 Vh [u1,u2],[psi1,psi2];
 
 // Problem
-solve primal([u1,u2], [psi1, psi2]) =
-  int2d(Th) (L*detF(u1,u2)*(detF(u1,u2)-1.) * (C11(u1,u2) * gradE11(u1,u2,psi1,psi2)
-                                               + C12(u1,u2) * gradE12(u1,u2,psi1,psi2)
-                                               + C21(u1,u2) * gradE21(u1,u2,psi1,psi2)
-                                               + C22(u1,u2) * gradE22(u1,u2,psi1,psi2))
-             + 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,psi1,psi2) + E12(u1,u2) * gradE12(u1,u2,psi1,psi2)
-                        + E21(u1,u2) * gradE21(u1,u2,psi1,psi2) + E22(u1,u2) * gradE22(u1,u2,psi1,psi2)))
-
-  + on(2,u1=u) //dirichlet
-  + on(1,u2=0) // symmetric bc
-  + on(4,u1=0) // symmetric bc
+// solve primal([u1,u2], [psi1, psi2]) =
+//   int2d(Th) (L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * gradE11(u1,u2,psi1,psi2)
+//                                                + C12(u1,u2) * gradE12(u1,u2,psi1,psi2)
+//                                                + C21(u1,u2) * gradE21(u1,u2,psi1,psi2)
+//                                                + C22(u1,u2) * gradE22(u1,u2,psi1,psi2))
+//              + 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,psi1,psi2) + E12(u1,u2) * gradE12(u1,u2,psi1,psi2)
+//                         + E21(u1,u2) * gradE21(u1,u2,psi1,psi2) + E22(u1,u2) * gradE22(u1,u2,psi1,psi2)))
+//
+//   + on(2,u1=u) //dirichlet
+//   + on(1,u2=0) // symmetric bc
+//   + on(4,u1=0) // symmetric bc
+//   ;
+//Problem fake to test macros: con grad11 ecc funzia, con F11 vari dà casini
+problem primal([u1,u2], [psi1,psi2]) =
+  int2d(Th)(L*E11(u1,u2)*grad11(psi1,psi2) + L*E22(u1,u2)*grad22(psi1,psi2) )
+    + on(2,u1=u) //dirichlet
+    + on(1,u2=0) // symmetric bc
+    + on(4,u1=0) // symmetric bc
   ;
+primal;
 
 // // Newton's method
 // for (int i = 0; i < 10; i++){
