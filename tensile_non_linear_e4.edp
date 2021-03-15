@@ -109,7 +109,7 @@ Vh [u1,u2],[psi1,psi2];
 //   ;
 //Problem fake to test macros: con grad11 ecc funzia, con F11 vari dà casini
 problem primal([u1,u2], [psi1,psi2]) =
-  int2d(Th)(L*E11(u1,u2)*grad11(psi1,psi2) + L*E22(u1,u2)*grad22(psi1,psi2) )
+  int2d(Th)(L*F11(u1,u2)*grad11(psi1,psi2) + L*E22(u1,u2)*grad22(psi1,psi2) )
     + on(2,u1=u) //dirichlet
     + on(1,u2=0) // symmetric bc
     + on(4,u1=0) // symmetric bc
