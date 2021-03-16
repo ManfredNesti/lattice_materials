@@ -56,10 +56,10 @@ macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
 macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
 
 //dEij(u1,u2)/du * lambda (l'ho corretto: CI ERAVAMO PERSI UN *0.5 PER STRADA?)
-macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*dx(l1) + grad21(u1,u2)*dx(l2) + dx(l1)) //
-macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*dy(l1) + grad21(u1,u2)*dy(l2) + grad12(u1,u2)*dx(l1) + grad22(u1,u2)*dx(l2) + dy(l1) + dx(l2))) //
-macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*dy(l1) + grad21(u1,u2)*dy(l2) + grad12(u1,u2)*dx(l1) + grad22(u1,u2)*dx(l2) + dy(l1) + dx(l2))) //
-macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*dy(l1) + grad22(u1,u2)*dy(l2) + dy(l2)) //
+macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) /*+ grad11(l1,l2)*/) //
+macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) /*+ grad12(l1,l2) + grad21(l1,l2)*/)) //
+macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) /*+ grad12(l1,l2) + grad21(l1,l2)*/)) //
+macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) /*+ grad22(l1,l2)*/) //
 
 //d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (this is the test function)
 macro grad2E11 (phi1,phi2,l1,l2) (gradE11(phi1,phi2,l1,l2)) //
@@ -95,13 +95,20 @@ fespace Vh(Th, [P1, P1]);
 Vh [u1,u2],[psi1,psi2], [varu1,varu2], [err1,err2];
 
 // Problem: try fix point method
-problem primal_linearized([varu1,varu2], [psi1, psi2]) =
+problem primallinearized([varu1,varu2], [psi1, psi2]) =
   int2d(Th) (L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * gradE11(varu1,varu2,psi1,psi2)
                                                + C12(u1,u2) * gradE12(varu1,varu2,psi1,psi2)
                                                + C21(u1,u2) * gradE21(varu1,varu2,psi1,psi2)
                                                + C22(u1,u2) * gradE22(varu1,varu2,psi1,psi2))
              + 2.0 * M * (E11(u1,u2) * gradE11(varu1,varu2,psi1,psi2) + E12(u1,u2) * gradE12(varu1,varu2,psi1,psi2)
                         + E21(u1,u2) * gradE21(varu1,varu2,psi1,psi2) + E22(u1,u2) * gradE22(varu1,varu2,psi1,psi2)))
+  + int2d(Th)(L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * grad11(psi1,psi2)
+                                               + C12(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2))
+                                               + C21(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2))
+                                               + C22(u1,u2) * grad22(psi1,psi2))
+           + 2.0 * M * (E11(u1,u2) * grad11(psi1,psi2) + E12(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2))
+                      + E21(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2) + E22(u1,u2) * grad22(ps1,psi2)))
+              )
 
   + on(2,varu1=u) //dirichlet
   + on(1,varu2=0) // symmetric bc
@@ -111,27 +118,23 @@ problem primal_linearized([varu1,varu2], [psi1, psi2]) =
 //Initialization:
 [varu1, varu2] = [0., 0.];
 [u1, u2] = [0., 0.];
-real tol = 1.e-4;
+real tol = 1.e-2;
 real res = 2. * tol;
 int loopcount = 0;
 int loopmax = 45;
-real err = 0.;
 
-func real error()
+func real residualL2()
 {
   // store increments in err variables
   err1[] = varu1[];
   err1[] -= u1[];
 
   // compute increment norms
-  real erru = int2d(Th)(dx(err1)^2 + dy(err1)^2 +
-                        dx(err2)^2 + dy(err2)^2 +
-                        err1^2 + err2^2);
-  real normu = int2d(Th)(dx(u1)^2 + dy(u1)^2 +
-                         dx(u2)^2 + dy(u2)^2 +
-                         u1^2 + u2^2);
+  // for H1 norm: dx(err1)^2 + dy(err1)^2 + dx(err2)^2 + dy(err2)^2
+  real erru = int2d(Th)(err1^2 + err2^2);
+  real normu = int2d(Th)(u1^2 + u2^2);
   // return error estimate (stopping criterion)
-  return sqrt(erru / normu);
+  return sqrt(erru / (normu+1e-15));
 }
 // Fixed point  method
 while (loopcount <= loopmax && res >= tol){
@@ -139,13 +142,11 @@ while (loopcount <= loopmax && res >= tol){
     cout << "Loop " << loopcount << endl;
 
     // Solve
-    primal_linearized;
+    primallinearized;
     // update err for the stopping criterion
-    err = error();
-
+    res = residualL2();
     // Update
-    u1 = varu1;
-    u2 = varu2;
+    u1[] = varu1[];
 
     cout << " L^2 residual = " << res << endl;
 
