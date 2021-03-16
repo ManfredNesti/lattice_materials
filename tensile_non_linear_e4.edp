@@ -92,65 +92,66 @@ rho = 1;
 
 //displacement space
 fespace Vh(Th, [P1, P1]);
-Vh [u1,u2],[psi1,psi2];
+Vh [u1,u2],[psi1,psi2], [varu1,varu2], [err1,err2];
 
-// Problem
-// solve primal([u1,u2], [psi1, psi2]) =
-//   int2d(Th) (L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * gradE11(u1,u2,psi1,psi2)
-//                                                + C12(u1,u2) * gradE12(u1,u2,psi1,psi2)
-//                                                + C21(u1,u2) * gradE21(u1,u2,psi1,psi2)
-//                                                + C22(u1,u2) * gradE22(u1,u2,psi1,psi2))
-//              + 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,psi1,psi2) + E12(u1,u2) * gradE12(u1,u2,psi1,psi2)
-//                         + E21(u1,u2) * gradE21(u1,u2,psi1,psi2) + E22(u1,u2) * gradE22(u1,u2,psi1,psi2)))
-//
-//   + on(2,u1=u) //dirichlet
-//   + on(1,u2=0) // symmetric bc
-//   + on(4,u1=0) // symmetric bc
-//   ;
-//Problem fake to test macros: con grad11 ecc funzia, con F11 vari dà casini
-problem primal([u1,u2], [psi1,psi2]) =
-  int2d(Th)(L*F11(u1,u2)*grad11(psi1,psi2) + L*E22(u1,u2)*grad22(psi1,psi2) )
-    + on(2,u1=u) //dirichlet
-    + on(1,u2=0) // symmetric bc
-    + on(4,u1=0) // symmetric bc
+// Problem: try fix point method
+problem primal_linearized([varu1,varu2], [psi1, psi2]) =
+  int2d(Th) (L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * gradE11(varu1,varu2,psi1,psi2)
+                                               + C12(u1,u2) * gradE12(varu1,varu2,psi1,psi2)
+                                               + C21(u1,u2) * gradE21(varu1,varu2,psi1,psi2)
+                                               + C22(u1,u2) * gradE22(varu1,varu2,psi1,psi2))
+             + 2.0 * M * (E11(u1,u2) * gradE11(varu1,varu2,psi1,psi2) + E12(u1,u2) * gradE12(varu1,varu2,psi1,psi2)
+                        + E21(u1,u2) * gradE21(varu1,varu2,psi1,psi2) + E22(u1,u2) * gradE22(varu1,varu2,psi1,psi2)))
+
+  + on(2,varu1=u) //dirichlet
+  + on(1,varu2=0) // symmetric bc
+  + on(4,varu1=0) // symmetric bc
   ;
-primal;
 
-// // Newton's method
-// for (int i = 0; i < 10; i++){
-//     cout << "Loop " << i << endl;
-//
-//     // Update
-//     e2 = F2(un, vn);
-//     dfe2 = df(e2) ; // entra in NonLin
-//     ddfe2 = ddf(e2); // entra in NonLin
-//     cout << "e2 max = " <<e2[].max << ", min = " << e2[].min << endl;
-//     cout << "de2 max = "<< dfe2[].max << ", min = " << dfe2[].min << endl;
-//     cout << "dde2 max = "<< ddfe2[].max << ", min = " << ddfe2[].min << endl;
-//
-//     // Solve
-//     NonLin;
-//     w[]  = M*uu[];
-//
-//     // Residual
-//     real res = sqrt(w[]' * uu[]); //L^2 norm of [uu, vv]
-//     cout << " L^2 residual = " << res << endl;
-//
-//     // Update
-//     v1 = vv;
-//     u1 = uu;
-//     cout << "u1 min = " <<u1[].min << ", u1 max = " << u1[].max << endl;
-//     cout << "v1 min = " <<v1[].min << ", v2 max = " << v1[].max << endl;
-//
-//     // Plot
-//     // plot([uu, vv], wait=true, cmm="uu, vv");
-//
-//     // Update
-//     un[] -= uu[];
-//     // plot([un, vn], wait=true, cmm="displacement");
-//
-//     if (res < 1e-5) break;
-// }
+//Initialization:
+[varu1, varu2] = [0., 0.];
+[u1, u2] = [0., 0.];
+real tol = 1.e-4;
+real res = 2. * tol;
+int loopcount = 0;
+int loopmax = 45;
+real err = 0.;
+
+func real error()
+{
+  // store increments in err variables
+  err1[] = varu1[];
+  err1[] -= u1[];
+
+  // compute increment norms
+  real erru = int2d(Th)(dx(err1)^2 + dy(err1)^2 +
+                        dx(err2)^2 + dy(err2)^2 +
+                        err1^2 + err2^2);
+  real normu = int2d(Th)(dx(u1)^2 + dy(u1)^2 +
+                         dx(u2)^2 + dy(u2)^2 +
+                         u1^2 + u2^2);
+  // return error estimate (stopping criterion)
+  return sqrt(erru / normu);
+}
+// Fixed point  method
+while (loopcount <= loopmax && res >= tol){
+    loopcount ++;
+    cout << "Loop " << loopcount << endl;
+
+    // Solve
+    primal_linearized;
+    // update err for the stopping criterion
+    err = error();
+
+    // Update
+    u1 = varu1;
+    u2 = varu2;
+
+    cout << " L^2 residual = " << res << endl;
+
+    // Plot
+    plot([u1,u2], cmm="displacement");
+}
 
 // Plot
 plot([u1, u2], wait=true);
