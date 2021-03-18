@@ -109,6 +109,7 @@ macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) /
 macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
 macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
 macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
 macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
 
 //dEij(u1,u2)/du * lambda (l'ho corretto: CI ERAVAMO PERSI UN *0.5 PER STRADA?)
