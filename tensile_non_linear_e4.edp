@@ -4,8 +4,8 @@ ofstream out("tensile_non_linear2.csv", append); //file per output
 // Macro
 //Gradient of a vector field (u1, u2)
 macro grad11(u1, u2) (dx(u1)) //
-macro grad12(u1, u2) (dy(u1)) // grad21 secondo freefem doc ... sec me sbaglia
-macro grad21(u1, u2) (dx(u2)) // grad12 secondo freefem doc ... sec me sbaglia
+macro grad12(u1, u2) (dy(u1)) //
+macro grad21(u1, u2) (dx(u2)) //
 macro grad22(u1, u2) (dy(u2)) //
 
 //Deformation gradient F
@@ -20,7 +20,7 @@ macro E21 (u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2)
 macro E22 (u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
 
 macro traceE(u1,u2)	(E11(u1,u2) + E22(u1, u2)) // Trace of Green-Lagrange tensor
-macro detF(u1,u2) (F11(u1,u2)* F22(u1,u2) - F12(u1,u2)* F21(u1,u2) ) //
+macro detF(u1,u2) (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) ) //
 //macro detF(u1,u2) (1 + grad11(u1,u2 + grad22(u1,u2) + grad11(u1,u2*grad22(u1,u2) - grad12(u1,u2*grad21(u1,u2)) //J determinant of F
 
 //Right Cauchy-Green deformation tensor C
@@ -29,8 +29,9 @@ macro C12(u1,u2) ((grad11(u1,u2)+1.0)*grad12(u1,u2) + grad21(u1,u2)*(grad22(u1,u
 macro C21(u1,u2) ((grad11(u1,u2)+1.0)*grad12(u1,u2) + grad21(u1,u2)*(grad22(u1,u2) + 1.0)) //
 macro C22(u1,u2) ((grad22(u1,u2)+1.0)^2+grad12(u1,u2)^2 ) //
 
-macro detC(u1,u2) ((2*E11(u1,u2)+1)*(2*E22(u1,u2)+1) - 4 * E12(u1,u2) * E21(u1,u2)) // determinantof C
-//Inverse of C: C^-1 (simmetryc)
+macro detC(u1,u2) (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2)) // determinantof C
+
+//Inverse of C: C^-1 (symmetric)
 macro invC11(u1,u2) (1/detC(u1,u2) * (2*E22(u1,u2)+1)) //
 macro invC12(u1,u2) (1/detC(u1,u2) * (-2*E12(u1,u2))) //
 macro invC21(u1,u2) (1/detC(u1,u2) * (-2*E21(u1,u2))) //
@@ -57,21 +58,21 @@ macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
 macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
 
 //dEij(u1,u2)/du * lambda (l'ho corretto: CI ERAVAMO PERSI UN *0.5 PER STRADA?)
-macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) /*+ grad11(l1,l2)*/) //
-macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2)) ) /*+ grad12(l1,l2) + grad21(l1,l2)*/ // vanno aggiunti dopo come termine noto
-macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2)) ) /*+ grad12(l1,l2) + grad21(l1,l2)*/ // vanno aggiunti dopo come termine noto
-macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) /*+ grad22(l1,l2)*/) //
+macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
+macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
+macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
+macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2)) //
 
 //d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (this is the test function)
-macro grad2E11 (phi1,phi2,l1,l2) (gradE11(phi1,phi2,l1,l2)) //
-macro grad2E12 (phi1,phi2,l1,l2) (gradE12(phi1,phi2,l1,l2)) //
-macro grad2E21 (phi1,phi2,l1,l2) (gradE21(phi1,phi2,l1,l2)) //
-macro grad2E22 (phi1,phi2,l1,l2) (gradE22(phi1,phi2,l1,l2)) //
+macro grad2E11 (phi1,phi2,l1,l2) (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2)) //
+macro grad2E12 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
 
 // Parameters
 real q = 4.; //power for pensalty method
 
-real  vold;
+real vold;
 real Pa = 0; //no forces
 
 real nu = 0.3;
@@ -93,7 +94,7 @@ rho = 1;
 
 //displacement space
 fespace Vh(Th, [P1, P1]);
-Vh [u1,u2],[u10,u20],[psi1,psi2], [varu1,varu2], [err1,err2];
+Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2];
 
 // // Problem: try fix point method
 // problem primallinearized([varu1,varu2], [psi1, psi2]) =
@@ -137,11 +138,13 @@ problem primallinearized([varu1,varu2], [psi1, psi2]) =
                                                       - D2212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
                                                       - D2221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
                                                       - D2222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2))
+
           + 2.0*M* (gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + E11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2) +
                     gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + E12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2) +
                     gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + E21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2) +
                     gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + E22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2) )
             )
+
     - int2d(Th) (L*detF(u10,u20)*(detF(u10,u20)-1.) * (C11(u10,u20) * gradE11(u10,u20,psi1,psi2)
                                                + C12(u10,u20) * gradE12(u10,u20,psi1,psi2)
     																					 + C21(u10,u20) * gradE21(u10,u20,psi1,psi2)
@@ -160,21 +163,22 @@ real tol = 1.e-2;
 real res = 2. * tol;
 int loopcount = 0;
 int loopmax = 45;
+real alpha = 0.5;
 
 //for fix point method
-func real residualL2()
-{
-  // store increments in err variables
-  err1[] = varu1[];
-  err1[] -= u1[];
-
-  // compute increment norms
-  // for H1 norm: dx(err1)^2 + dy(err1)^2 + dx(err2)^2 + dy(err2)^2
-  real erru = int2d(Th)(err1^2 + err2^2);
-  real normu = int2d(Th)(u1^2 + u2^2);
-  // return error estimate (stopping criterion)
-  return sqrt(erru / (normu+1e-15));
-}
+// func real residualL2()
+// {
+//   // store increments in err variables
+//   err1[] = varu1[];
+//   err1[] -= u1[];
+//
+//   // compute increment norms
+//   // for H1 norm: dx(err1)^2 + dy(err1)^2 + dx(err2)^2 + dy(err2)^2
+//   real erru = int2d(Th)(err1^2 + err2^2);
+//   real normu = int2d(Th)(u1^2 + u2^2);
+//   // return error estimate (stopping criterion)
+//   return sqrt(erru / (normu+1e-15));
+// }
 
 // for Newton method
 func real errorL2()
@@ -196,9 +200,10 @@ while (loopcount <= loopmax && res >= tol){
     cout << "Loop " << loopcount << endl;
 
     // Solve
+    cout << " determinant C: " << int2d(Th) (detC(u1,u2)) << endl;
     primallinearized;
     // Update
-    u1[] -= varu1[];// u_k+1 = u_k - delta_u (- perchè troviamo -deltau in realtà)
+    u1[] -= alpha * varu1[];// u_k+1 = u_k - delta_u (- perchè troviamo -deltau in realtà)
     // update err for the stopping criterion
     res = errorL2();
 
