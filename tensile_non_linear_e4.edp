@@ -1,5 +1,6 @@
 //tensile test with our model for non linear regime in 2d
-ofstream out("tensile_non_linear2.csv", append); //file per output
+ofstream out1("residual_newton.csv", append); //file per residui Newton
+ofstream out2("tensile_non_linear.csv", append); //file per nu output
 
 // Macro
 //Gradient of a vector field (u1, u2)
@@ -9,7 +10,7 @@ macro grad21(u1, u2) (dx(u2)) //
 macro grad22(u1, u2) (dy(u2)) //
 
 //Deformation gradient F
-macro F11(u1,u2) (1.0 + grad11(u1,u2)) //ij
+macro F11(u1,u2) (1.0 + grad11(u1,u2)) //
 macro F12(u1,u2) (0.0 + grad12(u1,u2)) //
 macro F21(u1,u2) (0.0 + grad21(u1,u2)) //
 macro F22(u1,u2) (1.0 + grad22(u1,u2)) //
@@ -83,7 +84,7 @@ macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(
 macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
 
 // Parameters
-real q = 4.; //power for pensalty method
+real q = 4.; //power for penalty method
 
 real vold;
 real Pa = 0; //no forces
@@ -109,27 +110,6 @@ rho = 1;
 fespace Vh(Th, [P1, P1]);
 Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2],
    [u,v], [du,dv]; //var for check newton
-
-// // Problem: try fix point method
-// problem primallinearized([varu1,varu2], [psi1, psi2]) =
-//   int2d(Th) (L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * gradE11(varu1,varu2,psi1,psi2)
-//                                                + C12(u1,u2) * gradE12(varu1,varu2,psi1,psi2)
-//                                                + C21(u1,u2) * gradE21(varu1,varu2,psi1,psi2)
-//                                                + C22(u1,u2) * gradE22(varu1,varu2,psi1,psi2))
-//              + 2.0 * M * (E11(u1,u2) * gradE11(varu1,varu2,psi1,psi2) + E12(u1,u2) * gradE12(varu1,varu2,psi1,psi2)
-//                         + E21(u1,u2) * gradE21(varu1,varu2,psi1,psi2) + E22(u1,u2) * gradE22(varu1,varu2,psi1,psi2)))
-//   + int2d(Th)(L*detF(u1,u2)*(detF(u1,u2)-1.0) * (C11(u1,u2) * grad11(psi1,psi2)
-//                                                + C12(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2))
-//                                                + C21(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2))
-//                                                + C22(u1,u2) * grad22(psi1,psi2))
-//            + 2.0 * M * (E11(u1,u2) * grad11(psi1,psi2) + E12(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2))
-//                       + E21(u1,u2) * 0.5 * (grad12(psi1,psi2) + grad21(psi1,psi2) + E22(u1,u2) * grad22(ps1,psi2)))
-//               )
-//
-//   + on(2,varu1=u) //dirichlet
-//   + on(1,varu2=0) // symmetric bc
-//   + on(4,varu1=0) // symmetric bc
-//   ;
 
 // // Problem: try Newton method
 problem primallinearized([varu1,varu2], [psi1, psi2]) =
@@ -161,10 +141,10 @@ problem primallinearized([varu1,varu2], [psi1, psi2]) =
                       gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + E22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2) )
            )
 
-    + int2d(Th) (L*detF(u10,u20)*(detF(u10,u20)-1.) * (C11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                                                     + C12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-          																					 + C21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-          																					 + C22(u10,u20) * gradE22(u10,u20,psi1,psi2))
+    + int2d(Th) (L*detF(u10,u20)*(detF(u10,u20)-1.) * (invC11(u10,u20) * gradE11(u10,u20,psi1,psi2)
+                                                     + invC12(u10,u20) * gradE12(u10,u20,psi1,psi2)
+          																					 + invC21(u10,u20) * gradE21(u10,u20,psi1,psi2)
+          																					 + invC22(u10,u20) * gradE22(u10,u20,psi1,psi2))
      				    + 2.0 * M * (E11(u10,u20) * gradE11(u10,u20,psi1,psi2)
                            + E12(u10,u20) * gradE12(u10,u20,psi1,psi2)
     				               + E21(u10,u20) * gradE21(u10,u20,psi1,psi2)
@@ -177,26 +157,11 @@ problem primallinearized([varu1,varu2], [psi1, psi2]) =
 //Initialization:
 [u10, u20] = [x, 0]; //u_k old che soddisfa BC Dirichlet
 [u1, u2] = [u10, u20]; // u_1
-real tol = 1.e-2;
+real tol = 1.e-3;
 real res = 2. * tol;
 int loopcount = 0;
-int loopmax = 45;
+int loopmax = 100;
 real alpha = 0.5;
-
-//for fix point method
-// func real residualL2()
-// {
-//   // store increments in err variables
-//   err1[] = varu1[];
-//   err1[] -= u1[];
-//
-//   // compute increment norms
-//   // for H1 norm: dx(err1)^2 + dy(err1)^2 + dx(err2)^2 + dy(err2)^2
-//   real erru = int2d(Th)(err1^2 + err2^2);
-//   real normu = int2d(Th)(u1^2 + u2^2);
-//   // return error estimate (stopping criterion)
-//   return sqrt(erru / (normu+1e-15));
-// }
 
 // for Newton method
 func real errorL2()
@@ -218,7 +183,6 @@ while (loopcount <= loopmax && res >= tol){
     cout << "Loop " << loopcount << endl;
 
     // Solve
-    cout << " determinant C: " << int2d(Th) (detC(u1,u2)) << endl;
     primallinearized;
     // Update
     u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u (- se trovassimo -deltau)
@@ -226,6 +190,8 @@ while (loopcount <= loopmax && res >= tol){
     res = errorL2();
 
     cout << " L^2 residual = " << res << endl;
+    out1 << res ;
+    out1 << endl;
     //Update old solution
     u10[] = u1[];
 
@@ -259,11 +225,11 @@ real nu12 = -d2/d1;
 cout << "estimated nu = " << nu12 << endl;
 
 //output
-out << nu12 << ",";
-out << endl;
+// out2 << nu12 << ",";
+// out2 << endl;
 
 // Check newton
-real eps = 1e-14;
+real eps = 1e-4;
 [u,v] = [x, 0]; // trial u
 [du,dv] = [sin(2*pi*x)*sin(2*pi*y), sin(2*pi*x)*sin(2*pi*y)];   // trial du
 varf Jac ([dummy1,dummy2],[w1,w2]) = int2d(Th) (L* (2.0*detF(u,v)-1.) * (dx(w1)*F22(u,v) + dy(w2)*F11(u,v) - dy(w1)*F21(u,v) - dx(w2)*F12(u,v))
@@ -297,20 +263,20 @@ Vh [upos,vpos] = [u + eps*du, v + eps*dv];
 Vh [uneg,vneg] = [u - eps*du, v - eps*dv];
 
 varf rhs1([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(uneg,vneg)*(detF(uneg,vneg)-1.) *
-                                                     (C11(uneg,vneg) * gradE11(uneg,vneg,w1,w2)
-                                                    + C12(uneg,vneg) * gradE12(uneg,vneg,w1,w2)
-															                      + C21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
-											                              + C22(uneg,vneg) * gradE22(uneg,vneg,w1,w2))
+                                                     (invC11(uneg,vneg) * gradE11(uneg,vneg,w1,w2)
+                                                    + invC12(uneg,vneg) * gradE12(uneg,vneg,w1,w2)
+															                      + invC21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
+											                              + invC22(uneg,vneg) * gradE22(uneg,vneg,w1,w2))
                                     + 2.0 * M * (E11(uneg,vneg) * gradE11(uneg,vneg,w1,w2)
                                                + E12(uneg,vneg) * gradE12(uneg,vneg,w1,w2)
                                                + E21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
                                                + E22(uneg,vneg) * gradE22(uneg,vneg,w1,w2))
                                                );
 varf rhs2([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(upos,vpos)*(detF(upos,vpos)-1.) *
-                                                    (C11(upos,vpos) * gradE11(upos,vpos,w1,w2)
-                                                   + C12(upos,vpos) * gradE12(upos,vpos,w1,w2)
-											                             + C22(upos,vpos) * gradE22(upos,vpos,w1,w2))
-                                                   + C21(upos,vpos) * gradE21(upos,vpos,w1,w2)
+                                                    (invC11(upos,vpos) * gradE11(upos,vpos,w1,w2)
+                                                   + invC12(upos,vpos) * gradE12(upos,vpos,w1,w2)
+                                                   + invC21(upos,vpos) * gradE21(upos,vpos,w1,w2)
+                                                   + invC22(upos,vpos) * gradE22(upos,vpos,w1,w2))
                                    + 2.0 * M * (E11(upos,vpos) * gradE11(upos,vpos,w1,w2)
                                               + E12(upos,vpos) * gradE12(upos,vpos,w1,w2)
                                               + E21(upos,vpos) * gradE21(upos,vpos,w1,w2)
@@ -322,6 +288,6 @@ real[int] RHS2 = rhs2(0,Vh);
 RHS2 = RHS2 - RHS1;
 RHS2 = (2*eps)^(-1)*RHS2;
 real[int] JAC = Jac(0,Vh);
-for (int i=0; i<JAC.n; i++) cout << "RHS(i) = " << RHS2[i] << " " << "JAC(i) = " << JAC[i] << endl;
+for (int i=JAC.n-5; i<JAC.n; i++) cout << "RHS(i) = " << RHS2[i] << " " << "JAC(i) = " << JAC[i] << endl;
 RHS1 = RHS2 - JAC;
 cout << "||RHS - JAC||_inf = " << RHS1.linfty << endl;
