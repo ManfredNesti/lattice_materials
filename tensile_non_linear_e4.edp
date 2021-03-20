@@ -17,8 +17,8 @@ macro F22(u1,u2) (1.0 + grad22(u1,u2)) //
 
 // Components Green-Lagrange strain tensor E
 macro E11(u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
-macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2) - 1.) //
-macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2) - 1.) //
+macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
 macro E22(u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
 // macro E11(u1,u2) (0.5*(F11(u1,u2) * F11(u1,u2) + F21(u1,u2) * F21(u1,u2) - 1.0)) //
 // macro E12(u1,u2) (0.5*(F11(u1,u2) * F12(u1,u2) + F21(u1,u2) * F22(u1,u2)))) //
