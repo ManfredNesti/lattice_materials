@@ -161,7 +161,7 @@ real tol = 1.e-3;
 real res = 2. * tol;
 int loopcount = 0;
 int loopmax = 100;
-real alpha = 0.5;
+real alpha = 1.0;
 
 // for Newton method
 func real errorL2()
