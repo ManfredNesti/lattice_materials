@@ -17,13 +17,17 @@ mesh Th = square(n, n, [x, y]);
 //density space
 fespace Xh1(Th,P1);
 fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
-Xhp v,vH, psi, lz, uz; //density, filtered density, test density, param for ipopt
+Xhp v,vH, w, psi, lz, uz; //density, filtered density, test density, param for ipopt
 Xh1 m11,m12,m22;
 
 //displacement space
 fespace Vh(Th, [P1, P1]);
 Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2], //displacement, du, test displacement
    [l1, l2], [phi1, phi2]; //lambda e lambda test
+
+//HO SCOPERTO SERVONO PER MAKEMETRICA
+fespace Xh0(Th, P0); //  periodic = [[2,y],[4,y],[1,x],[3,x]]);
+Xh0 vol = area;
 
 //verbosity = 0.;
 
@@ -292,10 +296,10 @@ func real[int] gradJ(real[int] & v)
           			                                                     + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
           			          																					 + invC21(u1,u2) * gradE21(u1,u2,l1,l2)
           			          																					 + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
-       				 + q*w^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u21,l1,l2)
-        			                           + E12(u1,u2) * gradE12(u1,u21,l1,l2)
-        			    				               + E21(u1,u2) * gradE21(u1,u21,l1,l2)
-        			                           + E22(u1,u2) * gradE22(u1,u21,l1,l2)))
+       				 + q*w^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
+        			                           + E12(u1,u2) * gradE12(u1,u2,l1,l2)
+        			    				               + E21(u1,u2) * gradE21(u1,u2,l1,l2)
+        			                           + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
       - int1d(Th,3) (q*w^(q-1)*psi* u2 * Curly);
 
   dJ = gradient(0, Xhp);

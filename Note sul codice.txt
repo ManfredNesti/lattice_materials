@@ -25,6 +25,10 @@ q r s sono le potenze della densità (il p del rho^p)
 radius = 1/tau^2 coefficient Helmotz filter
 l1star ecc.?
 
+//HO SCOPERTO SERVONO PER MAKEMETRICA -> CHIEDERE MEGLIO PERCHÈ; come se Xh0 in makemetrica lo deducesse dallo script n cui lo chiama, infatti è una func
+fespace Xh0(Th, P0); //  periodic = [[2,y],[4,y],[1,x],[3,x]]);
+Xh0 vol = area;
+
 [v1,v2,v3]: funzioni test (componenti) per formulazioni deboli con lo spostamento (in microprimal, in E ecc.)
 u1star ecc spostamenti a cui corrispondo gli epsilon star (eq4)
 [z1,z2,z3]
