@@ -11,9 +11,9 @@
 * __ff_non_linear.edp__: problema non lineare dalla documentazione di FreeFem
 * __tensile_non_linear.edp__: stesso problema di trazione di Micheletti nel modello non lineare di FreeFem, f(F2) = F2, parametro nl = {0: lineare, 1: non lineare}
 * __tensile_non_linear_e1.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia1 (ANCORA DA FARE, FORSE NON SERVE)
-* __tensile_non_linear_e4.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia4 (TENATIVO METODO PUNTO FISSO -> sembra divergere / TENTATIVO NEWTON -> ... WORK IN PROGRESS )
+* __tensile_non_linear_e4.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia4, risolto tramite metodo di Newton
 * __case1_non_linear1.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro) (probabilmente i nomi con _ sono da cambiare), direi con energia1 (iniziato ma interrotto perchè scrivendo i pb primali componente per componente non ci tornavano cose)
-* __case1_non_linear2.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro), con energia4
+* __case1_non_linear2.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro), con energia4, primal risolto tramite metodo di Newton
 
 __Progressi__:
 * Abbiamo preso il problema linear di trazione di Micheletti (tensile.edp) e provato a mettere le BC di Nicola (__tensile_BC.edp__) e a calcolare nu con la formula di Sigmund anziché con convect (__tensile_nu.edp__) anche congiuntamente (__tensile_BC_nu.edp__)

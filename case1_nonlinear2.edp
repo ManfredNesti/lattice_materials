@@ -15,10 +15,10 @@ mesh Th = square(n, n, [x, y]);
 
 // Spazi funzionali (periodici e non) (BC???)
 //density space
-fespace Xh(Th,P1);
+fespace Xh1(Th,P1);
 fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
-Xhp rho;
-rho = 1;
+Xhp v,vH, psi, lz, uz; //density, filtered density, test density, param for ipopt
+Xh1 m11,m12,m22;
 
 //displacement space
 fespace Vh(Th, [P1, P1]);
@@ -35,15 +35,13 @@ Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2], //displacement, 
 
 
 srandom(10);
-for(int ii = 0; ii < Vhp.ndof; ii++)
+for(int ii = 0; ii < Xhp.ndof; ii++)
 	v[][ii] = random()/3e9;
 
-real [int] lm(1);
+real [int] lm(1); //param for ipopt
 
 // Varibiali ausiliarie
 real q = 4.;
-real r = 4.;
-real s = 4.;
 real radius = 1./50^2;
 real Omega = int2d(Th)(1.);
 real weigth = 0.;
@@ -53,13 +51,14 @@ real nu = 0.3;
 real E = 1.;
 real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
 real M = E/(2*(1+nu));
-real nu_target = 0.3;
 real nu12;
+real d1 = 1.; //u traction given
 
 real Volume = int2d(Th)(1.);
 
 // Volume fraction e valore target
 real vf = 0.3;
+real nutarget = 0.3;
 
 // Macro
 //Gradient of a vector field (u1, u2)
@@ -135,7 +134,7 @@ problem helmholtz(vH, psi) = int2d(Th)( radius*(dx(vH)*dx(psi) + dy(vH)*dy(psi))
                            + int2d(Th)( vH*psi )
                            - int2d(Th)( v *psi );
 
- // for Newton method
+ // residual Newton method
  func real errorL2()
  {
    // store increments
@@ -148,7 +147,7 @@ problem helmholtz(vH, psi) = int2d(Th)( radius*(dx(vH)*dx(psi) + dy(vH)*dy(psi))
    return sqrt(erru / (normu+1e-15));
 
 }
-//Problem: try Newton method
+//Newton method for primal
 problem primallinearized([varu1,varu2], [psi1, psi2]) =
   int2d(Th) (w^q * L * (2.0*detF(u10,u20)-1.) * (dx(psi1)*F22(u10,u20) + dy(psi2)*F11(u10,u20) - dy(psi1)*F21(u10,u20) - dx(psi2)*F12(u10,u20))
                                         * (invC11(u10,u20) * gradE11(u10,u20,varu1,varu2) + invC12(u10,u20) * gradE12(u10,u20,varu1,varu2)
@@ -201,7 +200,7 @@ func real J(real[int] & v)
   cout << "Solving primal problems..." << endl;
 
 	//Initialization:
-	[u10, u20] = [x, 0]; //u_k old che soddisfa BC Dirichlet
+	[u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet
 	[u1, u2] = [u10, u20]; // u_1
 	real tol = 1.e-3;
 	real res = 2. * tol;
@@ -231,23 +230,26 @@ func real J(real[int] & v)
 	    plot([u1,u2], cmm="displacement");
 	}
 
-	real d1 = int1d(Th,2)(w^q * u1) - int1d(Th,4)(w^q * u1);
-	real d2 = int1d(Th,3)(w^q * u2) - int1d(Th,1)(w^q * u2);
+	// real d1 = int1d(Th,2)(w^q * u1) - int1d(Th,4)(w^q * u1); -> equal to the one given by the traction
+	real d2 = int1d(Th,3)(w^q * u2) /*- int1d(Th,1)(w^q * u2)*/;
 	nu12 = - d2 / d1; //estimated nu
 
+  cout << "*********************************************" << endl;
+  cout << "j = " << jj << endl;
+  cout << "Poisson's ratio = " << nu12 << endl;
 
   jj = jj + 1;
 
-	return 0.5 * (nu12 - nu_target)^2;
+	return 0.5 * (nu12 - nutarget)^2;
 }
 
 // Gradient of the functional (approccio lagrangiano)
 func real[int] gradJ(real[int] & v)
 {
-  Vhp w;
+  Xhp w;
   w[] = v;
-  real [int] dJ(Vhp.ndof);
-	real Curly = (nu12 - nu_target);
+  real [int] dJ(Xhp.ndof);
+	real Curly = (nu12 - nutarget) / d1 ;
 
   cout << "Solving dual problems..." << endl;
 
@@ -279,25 +281,31 @@ func real[int] gradJ(real[int] & v)
                       gradE21(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2) + E21(u1,u2) * grad2E21(phi1,phi2,l1,l2) +
                       gradE22(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2) + E22(u1,u2) * grad2E22(phi1,phi2,l1,l2) )
            )
-					 -  int1d(Th,3)(Curly * phi2) - int1d(Th,1)(Curly * phi2) //rho?
+					 +  int1d(Th,3)(Curly * phi2)
 					 + on(2,l1=0) //dirichlet
 			     + on(1,l2=0) // symmetric bc
 			     + on(4,l1=0) // symmetric bc
 			   ;
-	/*
-  varf gradient(SS, psi) = depends on choice of J
 
+  varf gradient(SS, psi) =
+      int2d(Th) (q*w^(q-1)*psi*  L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
+          			                                                     + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
+          			          																					 + invC21(u1,u2) * gradE21(u1,u2,l1,l2)
+          			          																					 + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
+       				 + q*w^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u21,l1,l2)
+        			                           + E12(u1,u2) * gradE12(u1,u21,l1,l2)
+        			    				               + E21(u1,u2) * gradE21(u1,u21,l1,l2)
+        			                           + E22(u1,u2) * gradE22(u1,u21,l1,l2)))
+      - int1d(Th,3) (q*w^(q-1)*psi* u2 * Curly);
 
-	*/
-
-  // dJ = gradient(0, Vhp);
-  return 1; //dJ;
+  dJ = gradient(0, Xhp);
+  return dJ;
 }
 
 // Constraint: volume fraction
 func real C(real[int] & v)
 {
-  Vhp w;
+  Xhp w;
   w[] = v;
 
   real fraction = int2d(Th)(w);
@@ -314,12 +322,12 @@ func real[int] ipC(real[int] & v)
 // Constraint gradient
 func real[int] dC(real[int] & v)
 {
-  Vhp w;
+  Xhp w;
   w[] = v;
 
   varf dc(u,uu)   = int2d(Th)(uu);
 
-  real [int] jacC = dc(0,Vhp);
+  real [int] jacC = dc(0,Xhp);
   return jacC;
 }
 
@@ -327,7 +335,7 @@ matrix mdC;
 
 func matrix ipGradC(real[int] & v)
 {
-  real[int,int] dc(1,Vhp.ndof);
+  real[int,int] dc(1,Xhp.ndof);
   dc(0,:) = dC(v);
 
   mdC = dc;
@@ -335,10 +343,10 @@ func matrix ipGradC(real[int] & v)
 }
 
 // Variabili per ottimizzatore
-int[int] gvi(Vhp.ndof), gvj = 0:Vhp.ndof-1;
+int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 
-Vhp xlb = 1e-4, xub = 1;    // lower and upper bounds for v
+Xhp xlb = 1e-4, xub = 1;    // lower and upper bounds for v density
 
 real tolv = 0.;
 
@@ -374,7 +382,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  );
 
 	// Attivazione filtraggio Helmholtz
-	if(ii <=-2){
+	if(ii <=-2){ //poco chiaro quando filtri con Helmholtz ... direi mai
 	helmholtz;
 	plot(v,  wait = 1, fill = 1, cmm = "phase field after IPOPT");
 	plot(vH, wait = 1, fill = 1, cmm = "filtered phase field");
@@ -402,7 +410,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	xlb = xlb;
 	xub = xub;
 	gvi = gvi;
-	gvj = 0:Vhp.ndof-1;
+	gvj = 0:Xhp.ndof-1;
 	lz = lz;
 	uz = uz;
 	m11 = m11;

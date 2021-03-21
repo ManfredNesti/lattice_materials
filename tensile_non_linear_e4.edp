@@ -143,7 +143,7 @@ problem primallinearized([varu1,varu2], [psi1, psi2]) =
   ;
 
 //Initialization:
-[u10, u20] = [x, 0]; //u_k old che soddisfa BC Dirichlet
+[u10, u20] = [1*x, 0]; //u_k old che soddisfa BC Dirichlet
 [u1, u2] = [u10, u20]; // u_1
 real tol = 1.e-3;
 real res = 2. * tol;
@@ -206,7 +206,8 @@ cout << " --- ERROR --- Min area = " << minarea << endl;
 
 //estimated nu
 real d1 = int1d(Th,2)(u1) - int1d(Th,4)(u1);
-real d2 = int1d(Th,3)(u2) - int1d(Th,1)(u2);
+real d2 = int1d(Th,3)(u2) /*- int1d(Th,1)(u2)*/;
+// cout << " tolto: " << int1d(Th,1)(u2) << endl; // viene 1e-32 effettivamente ci aspettiamo sia zero
 cout << "d1 = " << d1 << endl;
 cout << "d2 = " << d2 << endl;
 real nu12 = -d2/d1;
