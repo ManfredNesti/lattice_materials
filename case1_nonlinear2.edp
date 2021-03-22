@@ -25,7 +25,6 @@ fespace Vh(Th, [P1, P1]);
 Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2], //displacement, du, test displacement
    [l1, l2], [phi1, phi2]; //lambda e lambda test
 
-//HO SCOPERTO SERVONO PER MAKEMETRICA
 fespace Xh0(Th, P0); //  periodic = [[2,y],[4,y],[1,x],[3,x]]);
 Xh0 vol = area;
 
@@ -234,8 +233,7 @@ func real J(real[int] & v)
 	    plot([u1,u2], cmm="displacement");
 	}
 
-	// real d1 = int1d(Th,2)(w^q * u1) - int1d(Th,4)(w^q * u1); -> equal to the one given by the traction
-	real d2 = int1d(Th,3)(w^q * u2) /*- int1d(Th,1)(w^q * u2)*/;
+	real d2 = int1d(Th,3)(w^q * u2);
 	nu12 = - d2 / d1; //estimated nu
 
   cout << "*********************************************" << endl;
@@ -300,7 +298,7 @@ func real[int] gradJ(real[int] & v)
         			                           + E12(u1,u2) * gradE12(u1,u2,l1,l2)
         			    				               + E21(u1,u2) * gradE21(u1,u2,l1,l2)
         			                           + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
-      - int1d(Th,3) (q*w^(q-1)*psi* u2 * Curly);
+      /*- int1d(Th,3) (q*w^(q-1)*psi* u2 * Curly)*/;
 
   dJ = gradient(0, Xhp);
   return dJ;
