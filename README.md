@@ -2,8 +2,7 @@
 
 ## Non linear 2D - [Flowchart](https://www.overleaf.com/project/60409aad8f184877680367ce)
 
-![Graph](<img src='https://g.gravizo.com/svg?digraph%20G%20%7B%0A%20%20subgraph%20cluster_case1_linear%20%7B%0A%20%20label%3D%22LINEAR%22%0A%20%20case1%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_case1_non_linear%20%7B%0A%20%20label%3D%22NON%20LINEAR%22%0A%20%20case1%20-%3E%20case1_non_linear%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_linear%20%7B%0A%20%20%20%20label%3D%22LINEAR%22%0A%20%20%20%20tensile%20-%3E%20tensile_BC%20-%3E%20tensile_BC_nu%3B%0A%20%20%20%20tensile%20-%3E%20tensile_nu%20-%3E%20tensile_BC_nu%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_non_linear%20%7B%0A%20%20%20%20label%3D%22NON%20LINEAR%22%0A%20%20%20%20tensile_nu%20-%3E%20tensile_non_linear%3B%0A%20%20%20%20ff_non_linear%20-%3E%20tensile_non_linear%20-%3E%20tensile_non_linear_e4%3B%0A%20%20%7D%0A%7D%0A
-'>)
+![Graph](<img src='https://g.gravizo.com/svg?digraph%20G%20%7B%0A%20%20subgraph%20cluster_case1_linear%20%7B%0A%20%20label%3D%22LINEAR%22%0A%20%20case1%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_case1_non_linear%20%7B%0A%20%20label%3D%22NON%20LINEAR%22%0A%20%20case1%20-%3E%20case1_non_linear%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_linear%20%7B%0A%20%20%20%20label%3D%22LINEAR%22%0A%20%20%20%20tensile%20-%3E%20tensile_BC%20-%3E%20tensile_BC_nu%3B%0A%20%20%20%20tensile%20-%3E%20tensile_nu%20-%3E%20tensile_BC_nu%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_non_linear%20%7B%0A%20%20%20%20label%3D%22NON%20LINEAR%22%0A%20%20%20%20tensile_nu%20-%3E%20tensile_non_linear%3B%0A%20%20%20%20ff_non_linear%20-%3E%20tensile_non_linear%20-%3E%20tensile_non_linear_e4%3B%0A%20%20%7D%0A%7D%0A'>)
 
 * __tensile.edp__: problema lineare di Micheletti, nu calcolato con convect
 * __tensile_BC.edp__: modello lineare di Michelletti, nu calcolato con convect, BC di Nicola
