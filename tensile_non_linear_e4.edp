@@ -1,6 +1,9 @@
 //tensile test with our model for non linear regime in 2d
-ofstream out1("residual_newton.csv", append); //file per residui Newton
-ofstream out2("tensile_non_linear.csv", append); //file per nu output
+int t = time();
+exec("mkdir results_tensile_non_linear_e4");
+exec("mkdir results_tensile_non_linear_e4/"+t);
+ofstream out1("results_tensile_non_linear_e4/"+t+"/residual_newton.csv", append); //file per residui Newton
+ofstream out2("results_tensile_non_linear_e4/"+t+"/tensile_non_linear_e4.csv", append); //file per nu output
 
 // Macro
 //Gradient of a vector field (u1, u2)

@@ -2,8 +2,10 @@ load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
 //verbosity = 1;
-
-ofstream out1("residual_newton.csv", append); //file per residui Newton
+int t = time();
+exec("mkdir results_case1_non_linear");
+exec("mkdir results_case1_non_linear/"+t);
+ofstream out1("results_case1_non_linear/"+t+"/residual_newton.csv", append); //file per residui Newton
 
 // Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
 int[int] ffordervel = [1];
@@ -423,7 +425,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	ii += 1;
 	cout << "Iterazione " << ii << ", Errore mesh = " << stopmesh << endl;
 
-	savevtk("sol_toll"+tau+"_vf"+vf+"iter"+(ii-1)+".vtk", Th, v, dataname="Density", order=ffordervel);
+	savevtk("results_case1_non_linear/"+t+"/sol_toll"+tau+"_vf"+vf+"iter"+(ii-1)+".vtk", Th, v, dataname="Density", order=ffordervel);
 
 }
 

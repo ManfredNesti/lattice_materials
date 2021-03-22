@@ -1,5 +1,8 @@
 // https://doc.freefem.org/models/non-linear-elasticity.html
-ofstream out("tensile_non_linear.csv", append); //file per output
+int t = time();
+exec("mkdir results_tensile_non_linear");
+exec("mkdir results_tensile_non_linear/"+t);
+ofstream out("results_tensile_non_linear/"+t+"/tensile_non_linear.csv", append); //file per output
 
 real nl = 0.; //1 if non-linear, 0 otherwise
 // Macro

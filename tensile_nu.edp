@@ -1,4 +1,7 @@
-ofstream out("tensile_nu.csv", append); //file per output epsilon11,epsilon12,epsilon22,sigma12,nu12(,nu21 non ha senso ...)
+int t = time();
+exec("mkdir results_tensile_nu");
+exec("mkdir results_tensile_nu/"+t);
+ofstream out("results_tensile_nu/"+t+"/tensile_nu.csv", append); //file per output epsilon11,epsilon12,epsilon22,sigma12,nu12(,nu21 non ha senso ...)
 mesh   Th = square(20,20); // reference domain to show mesh deformation
 fespace Vh(Th,[P1,P1]);
 Vh [u1,u2], [v1,v2], [lam1,lam2], [mu1,mu2], [u1old,u2old];

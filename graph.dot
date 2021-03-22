@@ -6,7 +6,7 @@ digraph G {
 
   subgraph cluster_case1_non_linear {
   label="NON LINEAR"
-  case1 -> case1_non_linear1 -> case1_non_linear2;
+  case1 -> case1_non_linear;
   }
 
   subgraph cluster_linear {
@@ -18,7 +18,6 @@ digraph G {
   subgraph cluster_non_linear {
     label="NON LINEAR"
     tensile_nu -> tensile_non_linear;
-    ff_non_linear -> tensile_non_linear -> tensile_non_linear_e1;
-    tensile_non_linear -> tensile_non_linear_e4;
+    ff_non_linear -> tensile_non_linear -> tensile_non_linear_e4;
   }
 }
