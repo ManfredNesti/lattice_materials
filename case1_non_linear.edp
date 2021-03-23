@@ -378,16 +378,15 @@ while(stopmesh > tolmesh && ii < maxit){
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
-      maxiter = 35*(ii<=3) + 10*(ii>3), warmstart = ii,
-	  lm = lm, uz = uz[], lz = lz[]
-	  //tol=1e-5,
+      maxiter = 5, warmstart = ii,
+	  lm = lm, uz = uz[], lz = lz[], tol=1e-5
 	  //printlevel = 1,
 	  //derivativetest="first-order");
       //,maxiter=10);
 	  );
 
-	// Attivazione filtraggio Helmholtz
-	if(ii <=-2){ //poco chiaro quando filtri con Helmholtz ... direi mai
+	// Attivazione filtraggio Helmholtz -> OFF
+	if(ii <=-2){
 	helmholtz;
 	plot(v,  wait = 1, fill = 1, cmm = "phase field after IPOPT");
 	plot(vH, wait = 1, fill = 1, cmm = "filtered phase field");
