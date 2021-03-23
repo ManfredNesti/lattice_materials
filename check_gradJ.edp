@@ -55,7 +55,7 @@ macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
 macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
 macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
 
-//dEij(u1,u2)/du * lambda (l'ho corretto: CI ERAVAMO PERSI UN *0.5 PER STRADA?)
+//dEij(u1,u2)/du * lambda
 macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
 macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
 macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
@@ -75,125 +75,282 @@ real E = 1.;
 real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
 real M = E/(2*(1+nu));
 real d1 = 1.; //u traction given
+real nutarget = 0.3;
+real eps = 1e-4;
 
 mesh   Th = square(30,30);
 //density space
 fespace Xh(Th,P1);
 fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
 Xhp rho, drho, w;
+rho =  ...;
+drho = ...;
 Xhp rhopos = rho + eps*drho;
 Xhp rhoneg = rho - eps*drho;
 
 //displacement space
 fespace Vh(Th, [P1, P1]);
-Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2];
+Vh [u1POS,u2POS], [u10POS,u20POS], [psi1,psi2], [varu1POS,varu2POS], [err1,err2];
+Vh [u1NEG,u2NEG], [u10NEG,u20NEG], [varu1NEG,varu2NEG],
+   [l1POS,l2POS], [phi1,phi2], [l1NEG,l2NEG];
 
 //Newton method
-problem primallinearized([varu1,varu2], [psi1, psi2]) =
-  int2d(Th) (L * (2.0*detF(u10,u20)-1.) * (dx(psi1)*F22(u10,u20) + dy(psi2)*F11(u10,u20) - dy(psi1)*F21(u10,u20) - dx(psi2)*F12(u10,u20))
-                                        * (invC11(u10,u20) * gradE11(u10,u20,varu1,varu2) + invC12(u10,u20) * gradE12(u10,u20,varu1,varu2)
-                                        +  invC21(u10,u20) * gradE21(u10,u20,varu1,varu2) + invC22(u10,u20) * gradE22(u10,u20,varu1,varu2))
+problem primallinearizedPOS([varu1POS,varu2POS], [psi1, psi2]) =
+  int2d(Th) (rhopos^q * L * (2.0*detF(u10POS,u20POS)-1.) * (dx(psi1)*F22(u10POS,u20POS) + dy(psi2)*F11(u10POS,u20POS) - dy(psi1)*F21(u10POS,u20POS) - dx(psi2)*F12(u10POS,u20POS))
+                                        * (invC11(u10POS,u20POS) * gradE11(u10POS,u20POS,varu1POS,varu2POS) + invC12(u10POS,u20POS) * gradE12(u10POS,u20POS,varu1POS,varu2POS)
+                                        +  invC21(u10POS,u20POS) * gradE21(u10POS,u20POS,varu1POS,varu2POS) + invC22(u10POS,u20POS) * gradE22(u10POS,u20POS,varu1POS,varu2POS))
 
-           + L * (detF(u10,u20)-1) * detF(u10,u20) * ( - D1111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + invC11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2)
-                                                       - D1211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + invC12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2)
-                                                       - D2111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + invC21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2)
-                                                       - D2211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + invC22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2)
+           + rhopos^q * L * (detF(u10POS,u20POS)-1) * detF(u10POS,u20POS) * ( - D1111(u10POS,u20POS) * gradE11(u10POS,u20POS,psi1,psi2) * gradE11(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D1112(u10POS,u20POS) * gradE12(u10POS,u20POS,psi1,psi2) * gradE11(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D1121(u10POS,u20POS) * gradE21(u10POS,u20POS,psi1,psi2) * gradE11(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D1122(u10POS,u20POS) * gradE22(u10POS,u20POS,psi1,psi2) * gradE11(u10POS,u20POS,varu1POS,varu2POS) + invC11(u10POS,u20POS) * grad2E11(psi1,psi2,varu1POS,varu2POS)
+                                                       - D1211(u10POS,u20POS) * gradE11(u10POS,u20POS,psi1,psi2) * gradE12(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D1212(u10POS,u20POS) * gradE12(u10POS,u20POS,psi1,psi2) * gradE12(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D1221(u10POS,u20POS) * gradE21(u10POS,u20POS,psi1,psi2) * gradE12(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D1222(u10POS,u20POS) * gradE22(u10POS,u20POS,psi1,psi2) * gradE12(u10POS,u20POS,varu1POS,varu2POS) + invC12(u10POS,u20POS) * grad2E12(psi1,psi2,varu1POS,varu2POS)
+                                                       - D2111(u10POS,u20POS) * gradE11(u10POS,u20POS,psi1,psi2) * gradE21(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D2112(u10POS,u20POS) * gradE12(u10POS,u20POS,psi1,psi2) * gradE21(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D2121(u10POS,u20POS) * gradE21(u10POS,u20POS,psi1,psi2) * gradE21(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D2122(u10POS,u20POS) * gradE22(u10POS,u20POS,psi1,psi2) * gradE21(u10POS,u20POS,varu1POS,varu2POS) + invC21(u10POS,u20POS) * grad2E21(psi1,psi2,varu1POS,varu2POS)
+                                                       - D2211(u10POS,u20POS) * gradE11(u10POS,u20POS,psi1,psi2) * gradE22(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D2212(u10POS,u20POS) * gradE12(u10POS,u20POS,psi1,psi2) * gradE22(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D2221(u10POS,u20POS) * gradE21(u10POS,u20POS,psi1,psi2) * gradE22(u10POS,u20POS,varu1POS,varu2POS)
+                                                       - D2222(u10POS,u20POS) * gradE22(u10POS,u20POS,psi1,psi2) * gradE22(u10POS,u20POS,varu1POS,varu2POS) + invC22(u10POS,u20POS) * grad2E22(psi1,psi2,varu1POS,varu2POS)
                                                    )
 
-            + 2.0*M* (gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + E11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2) +
-                      gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + E12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2) +
-                      gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + E21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2) +
-                      gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + E22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2) )
+            + rhopos * 2.0*M* (gradE11(u10POS,u20POS,psi1,psi2) * gradE11(u10POS,u20POS,varu1POS,varu2POS) + E11(u10POS,u20POS) * grad2E11(psi1,psi2,varu1POS,varu2POS) +
+                      gradE12(u10POS,u20POS,psi1,psi2) * gradE12(u10POS,u20POS,varu1POS,varu2POS) + E12(u10POS,u20POS) * grad2E12(psi1,psi2,varu1POS,varu2POS) +
+                      gradE21(u10POS,u20POS,psi1,psi2) * gradE21(u10POS,u20POS,varu1POS,varu2POS) + E21(u10POS,u20POS) * grad2E21(psi1,psi2,varu1POS,varu2POS) +
+                      gradE22(u10POS,u20POS,psi1,psi2) * gradE22(u10POS,u20POS,varu1POS,varu2POS) + E22(u10POS,u20POS) * grad2E22(psi1,psi2,varu1POS,varu2POS) )
            )
 
-    + int2d(Th) (L*detF(u10,u20)*(detF(u10,u20)-1.) * (invC11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                                                     + invC12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-          																					 + invC21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-          																					 + invC22(u10,u20) * gradE22(u10,u20,psi1,psi2))
-     				    + 2.0 * M * (E11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                           + E12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-    				               + E21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-                           + E22(u10,u20) * gradE22(u10,u20,psi1,psi2)))
-    + on(2,varu1=0) //dirichlet
-    + on(1,varu2=0) // symmetric bc
-    + on(4,varu1=0) // symmetric bc
+    + int2d(Th) (rhopos^q * L*detF(u10POS,u20POS)*(detF(u10POS,u20POS)-1.) * (invC11(u10POS,u20POS) * gradE11(u10POS,u20POS,psi1,psi2)
+                                                     + invC12(u10POS,u20POS) * gradE12(u10POS,u20POS,psi1,psi2)
+          																					 + invC21(u10POS,u20POS) * gradE21(u10POS,u20POS,psi1,psi2)
+          																					 + invC22(u10POS,u20POS) * gradE22(u10POS,u20POS,psi1,psi2))
+     				    + rhopos^q* 2.0 * M * (E11(u10POS,u20POS) * gradE11(u10POS,u20POS,psi1,psi2)
+                           + E12(u10POS,u20POS) * gradE12(u10POS,u20POS,psi1,psi2)
+    				               + E21(u10POS,u20POS) * gradE21(u10POS,u20POS,psi1,psi2)
+                           + E22(u10POS,u20POS) * gradE22(u10POS,u20POS,psi1,psi2)))
+    + on(2,varu1POS=0) //dirichlet
+    + on(1,varu2POS=0) // symmetric bc
+    + on(4,varu1POS=0) // symmetric bc
   ;
 
+  problem primallinearizedNEG([varu1NEG,varu2NEG], [psi1, psi2]) =
+    int2d(Th) (rhoneg^q * L * (2.0*detF(u10NEG,u20NEG)-1.) * (dx(psi1)*F22(u10NEG,u20NEG) + dy(psi2)*F11(u10NEG,u20NEG) - dy(psi1)*F21(u10NEG,u20NEG) - dx(psi2)*F12(u10NEG,u20NEG))
+                                          * (invC11(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,varu1NEG,varu2NEG) + invC12(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                          +  invC21(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,varu1NEG,varu2NEG) + invC22(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,varu1NEG,varu2NEG))
+
+             + rhoneg^q * L * (detF(u10NEG,u20NEG)-1) * detF(u10NEG,u20NEG) * ( - D1111(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,psi1,psi2) * gradE11(u10NEG,u20NEG,varu1POS,varu2POS)
+                                                         - D1112(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,psi1,psi2) * gradE11(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D1121(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,psi1,psi2) * gradE11(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D1122(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,psi1,psi2) * gradE11(u10NEG,u20NEG,varu1NEG,varu2NEG) + invC11(u10NEG,u20NEG) * grad2E11(psi1,psi2,varu1NEG,varu2NEG)
+                                                         - D1211(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,psi1,psi2) * gradE12(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D1212(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,psi1,psi2) * gradE12(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D1221(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,psi1,psi2) * gradE12(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D1222(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,psi1,psi2) * gradE12(u10NEG,u20NEG,varu1NEG,varu2NEG) + invC12(u10NEG,u20NEG) * grad2E12(psi1,psi2,varu1NEG,varu2NEG)
+                                                         - D2111(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,psi1,psi2) * gradE21(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D2112(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,psi1,psi2) * gradE21(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D2121(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,psi1,psi2) * gradE21(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D2122(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,psi1,psi2) * gradE21(u10NEG,u20NEG,varu1NEG,varu2NEG) + invC21(u10NEG,u20NEG) * grad2E21(psi1,psi2,varu1NEG,varu2NEG)
+                                                         - D2211(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,psi1,psi2) * gradE22(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D2212(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,psi1,psi2) * gradE22(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D2221(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,psi1,psi2) * gradE22(u10NEG,u20NEG,varu1NEG,varu2NEG)
+                                                         - D2222(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,psi1,psi2) * gradE22(u10NEG,u20NEG,varu1NEG,varu2NEG) + invC22(u10NEG,u20NEG) * grad2E22(psi1,psi2,varu1NEG,varu2NEG)
+                                                     )
+
+              + rhoneg^q * 2.0*M* (gradE11(u10NEG,u20NEG,psi1,psi2) * gradE11(u10NEG,u20NEG,varu1NEG,varu2NEG) + E11(u10NEG,u20NEG) * grad2E11(psi1,psi2,varu1NEG,varu2NEG) +
+                                 gradE12(u10NEG,u20NEG,psi1,psi2) * gradE12(u10NEG,u20NEG,varu1NEG,varu2NEG) + E12(u10NEG,u20NEG) * grad2E12(psi1,psi2,varu1NEG,varu2NEG) +
+                                 gradE21(u10NEG,u20NEG,psi1,psi2) * gradE21(u10NEG,u20NEG,varu1NEG,varu2NEG) + E21(u10NEG,u20NEG) * grad2E21(psi1,psi2,varu1NEG,varu2NEG) +
+                                 gradE22(u10NEG,u20NEG,psi1,psi2) * gradE22(u10NEG,u20NEG,varu1NEG,varu2NEG) + E22(u10NEG,u20NEG) * grad2E22(psi1,psi2,varu1NEG,varu2NEG) )
+             )
+
+      + int2d(Th) (rhoneg^q * L*detF(u10NEG,u20NEG)*(detF(u10NEG,u20NEG)-1.) * (invC11(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,psi1,psi2)
+                                                       + invC12(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,psi1,psi2)
+            																					 + invC21(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,psi1,psi2)
+            																					 + invC22(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,psi1,psi2))
+       				    + rhoneg^q* 2.0 * M * (E11(u10NEG,u20NEG) * gradE11(u10NEG,u20NEG,psi1,psi2)
+                             + E12(u10NEG,u20NEG) * gradE12(u10NEG,u20NEG,psi1,psi2)
+      				               + E21(u10NEG,u20NEG) * gradE21(u10NEG,u20NEG,psi1,psi2)
+                             + E22(u10NEG,u20NEG) * gradE22(u10NEG,u20NEG,psi1,psi2)))
+      + on(2,varu1NEG=0) //dirichlet
+      + on(1,varu2NEG=0) // symmetric bc
+      + on(4,varu1NEG=0) // symmetric bc
+    ;
+
 //Initialization:
-[u10, u20] = [1*x, 0]; //u_k old che soddisfa BC Dirichlet
-[u1, u2] = [u10, u20]; // u_1
+[u10POS, u20POS] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet
+[u1POS, u2POS] = [u10POS, u20POS]; // u_1
+[u10NEG, u20NEG] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet
+[u1POS, u2NEG] = [u10NEG, u20NEG];
 real tol = 1.e-3;
 real res = 2. * tol;
 int loopcount = 0;
 int loopmax = 100;
 real alpha = 1.0;
 
-//residual
-func real errorL2()
+//residual POS
+func real errorL2POS()
 {
   // store increments
-  err1[] = u1[];
-  err1[] -= u10[];
+  err1[] = u1POS[];
+  err1[] -= u10POS[];
 
   real erru = int2d(Th)(err1^2 + err2^2);
-  real normu = int2d(Th)(u10^2 + u20^2);
+  real normu = int2d(Th)(u10POS^2 + u20POS^2);
   // return error estimate (stopping criterion)
   return sqrt(erru / (normu+1e-15));
 
 }
 
-// Iterations for primalPOS ... primalNEG
+//residual NEG
+func real errorL2NEG()
+{
+  // store increments
+  err1[] = u1NEG[];
+  err1[] -= u10NEG[];
+
+  real erru = int2d(Th)(err1^2 + err2^2);
+  real normu = int2d(Th)(u10NEG^2 + u20NEG^2);
+  // return error estimate (stopping criterion)
+  return sqrt(erru / (normu+1e-15));
+
+}
+
+// Iterations for primalPOS
 while (loopcount <= loopmax && res >= tol){
     loopcount ++;
     cout << "Loop " << loopcount << endl;
 
     // Solve
-    primallinearized;
+    primallinearizedPOS;
     // Update
-    u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u
+    u1POS[] += alpha * varu1POS[];// u_k+1 = u_k + delta_u
     // update err for the stopping criterion
-    res = errorL2();
+    res = errorL2POS();
 
     cout << " L^2 residual = " << res << endl;
     //Update old solution
-    u10[] = u1[];
+    u10POS[] = u1POS[];
     // Plot
-    plot([u1,u2], cmm="displacement");
+    // plot([u1POS,u2POS], cmm="displacement");
+}
+
+loopcount = 0;
+res = 2. * tol;
+
+// Iterations for primalNEG
+while (loopcount <= loopmax && res >= tol){
+    loopcount ++;
+    cout << "Loop " << loopcount << endl;
+
+    // Solve
+    primallinearizedNEG;
+    // Update
+    u1NEG[] += alpha * varu1NEG[];// u_k+1 = u_k + delta_u
+    // update err for the stopping criterion
+    res = errorL2NEG();
+
+    cout << " L^2 residual = " << res << endl;
+    //Update old solution
+    u10NEG[] = u1NEG[];
+    // Plot
+    // plot([u1NEG,u2NEG], cmm="displacement");
 }
 
 //estimated nu
-real d2pos = int1d(Th,3)(u2pos);
+real d2pos = int1d(Th,3)(u2POS);
 real nu12pos = -d2pos/d1; //d1pos?
 cout << "estimated nu = " << nu12pos << endl;
 
-real d2neg = int1d(Th,3)(u2neg);
+real d2neg = int1d(Th,3)(u2NEG);
 real nu12neg = -d2neg/d1; //d1neg?
 cout << "estimated nu = " << nu12neg << endl;
 
-// Check gradJ
-real eps = 1e-4;
+real CurlyPOS = (nu12pos - nutarget) / d1 ;
+real CurlyNEG = (nu12neg - nutarget) / d1 ;
 
-varf J1(dummy,w) = 0.5 * (nuneg - nutarget)^2; //chiaramente sbagliato da cambiare J1 e J2
-varf J2(dummy,w) = 0.5 * (nupos - nutarget)^2; //ma idea qst
+//Dual POS
+solve dualPOS([l1POS,l2POS], [phi1, phi2]) =
+int2d(Th) (rhopos^q* L * (2.0*detF(u1POS,u2POS)-1.) * (dx(phi1)*F22(u1,u2) + dy(phi2)*F11(u1POS,u2POS) - dy(phi1)*F21(u1POS,u2POS) - dx(phi2)*F12(u1POS,u2POS))
+                                      * (invC11(u1POS,u2POS) * gradE11(u1POS,u2POS,l1POS,l2POS) + invC12(u1POS,u2POS) * gradE12(u1POS,u2POS,l1POS,l2POS)
+                                      +  invC21(u1POS,u2POS) * gradE21(u1POS,u2POS,l1POS,l2POS) + invC22(u1POS,u2POS) * gradE22(u1POS,u2POS,l1POS,l2POS))
+
+        + rhopos^q* L * (detF(u1POS,u2POS)-1) * detF(u1POS,u2POS) * (  - D1111(u1POS,u2POS) * gradE11(u1POS,u2POS,phi1,phi2) * gradE11(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D1112(u1POS,u2POS) * gradE12(u1POS,u2POS,phi1,phi2) * gradE11(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D1121(u1POS,u2POS) * gradE21(u1POS,u2POS,phi1,phi2) * gradE11(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D1122(u1POS,u2POS) * gradE22(u1POS,u2POS,phi1,phi2) * gradE11(u1POS,u2POS,l1POS,l2POS) + invC11(u1POS,u2POS) * grad2E11(phi1,phi2,l1POS,l2POS)
+                                                                       - D1211(u1POS,u2POS) * gradE11(u1POS,u2POS,phi1,phi2) * gradE12(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D1212(u1POS,u2POS) * gradE12(u1POS,u2POS,phi1,phi2) * gradE12(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D1221(u1POS,u2POS) * gradE21(u1POS,u2POS,phi1,phi2) * gradE12(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D1222(u1POS,u2POS) * gradE22(u1POS,u2POS,phi1,phi2) * gradE12(u1POS,u2POS,l1POS,l2POS) + invC12(u1POS,u2POS) * grad2E12(phi1,phi2,l1POS,l2POS)
+                                                                       - D2111(u1POS,u2POS) * gradE11(u1POS,u2POS,phi1,phi2) * gradE21(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D2112(u1POS,u2POS) * gradE12(u1POS,u2POS,phi1,phi2) * gradE21(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D2121(u1POS,u2POS) * gradE21(u1POS,u2POS,phi1,phi2) * gradE21(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D2122(u1POS,u2POS) * gradE22(u1POS,u2POS,phi1,phi2) * gradE21(u1POS,u2POS,l1POS,l2POS) + invC21(u1POS,u2POS) * grad2E21(phi1,phi2,l1POS,l2POS)
+                                                                       - D2211(u1POS,u2POS) * gradE11(u1POS,u2POS,phi1,phi2) * gradE22(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D2212(u1POS,u2POS) * gradE12(u1POS,u2POS,phi1,phi2) * gradE22(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D2221(u1POS,u2POS) * gradE21(u1POS,u2POS,phi1,phi2) * gradE22(u1POS,u2POS,l1POS,l2POS)
+                                                                       - D2222(u1POS,u2POS) * gradE22(u1POS,u2POS,phi1,phi2) * gradE22(u1POS,u2POS,l1POS,l2POS) + invC22(u1POS,u2POS) * grad2E22(phi1,phi2,l1POS,l2POS)
+                                                    )
+
+          + rhopos^q* 2.0*M* (gradE11(u1POS,u2POS,phi1,phi2) * gradE11(u1POS,u2POS,l1POS,l2POS) + E11(u1POS,u2POS) * grad2E11(phi1,phi2,l1POS,l2POS) +
+                              gradE12(u1POS,u2POS,phi1,phi2) * gradE12(u1POS,u2POS,l1POS,l2POS) + E12(u1POS,u2POS) * grad2E12(phi1,phi2,l1POS,l2POS) +
+                              gradE21(u1POS,u2POS,phi1,phi2) * gradE21(u1POS,u2POS,l1POS,l2POS) + E21(u1POS,u2POS) * grad2E21(phi1,phi2,l1POS,l2POS) +
+                              gradE22(u1POS,u2POS,phi1,phi2) * gradE22(u1POS,u2POS,l1POS,l2POS) + E22(u1POS,u2POS) * grad2E22(phi1,phi2,l1POS,l2POS) )
+         )
+         +  int1d(Th,3)(CurlyPOS * phi2)
+         + on(2,l1POS=0) //dirichlet
+         + on(1,l2POS=0) // symmetric bc
+         + on(4,l1POS=0) // symmetric bc
+       ;
+
+//Dual NEG
+solve dualNEG([l1NEG,l2NEG], [phi1, phi2]) =
+int2d(Th) (rhoneg^q * L * (2.0*detF(u1NEG,u2NEG)-1.) * (dx(phi1)*F22(u1NEG,u2NEG) + dy(phi2)*F11(u1NEG,u2NEG) - dy(phi1)*F21(u1NEG,u2NEG) - dx(phi2)*F12(u1NEG,u2NEG))
+                                               * (invC11(u1NEG,u2NEG) * gradE11(u1NEG,u2NEG,l1NEG,l2NEG) + invC12(u1NEG,u2NEG) * gradE12(u1NEG,u2NEG,l1NEG,l2NEG)
+                                               +  invC21(u1NEG,u2NEG) * gradE21(u1NEG,u2NEG,l1NEG,l2NEG) + invC22(u1NEG,u2NEG) * gradE22(u1NEG,u2NEG,l1NEG,l2NEG))
+
+        + rhoneg^q * L * (detF(u1NEG,u2NEG)-1) * detF(u1NEG,u2NEG) * (  - D1111(u1NEG,u2NEG) * gradE11(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE11(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D1112(u1NEG,u2NEG) * gradE12(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE11(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D1121(u1NEG,u2NEG) * gradE21(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE11(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D1122(u1NEG,u2NEG) * gradE22(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE11(u1NEG,u2NEG,l1NEG,l2NEG) + invC11(u1NEG,u2NEG) * grad2E11(phi1,phi2,l1NEG,l2NEG)
+                                                                        - D1211(u1NEG,u2NEG) * gradE11(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE12(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D1212(u1NEG,u2NEG) * gradE12(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE12(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D1221(u1NEG,u2NEG) * gradE21(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE12(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D1222(u1NEG,u2NEG) * gradE22(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE12(u1NEG,u2NEG,l1NEG,l2NEG) + invC12(u1NEG,u2NEG) * grad2E12(phi1,phi2,l1NEG,l2NEG)
+                                                                        - D2111(u1NEG,u2NEG) * gradE11(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE21(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D2112(u1NEG,u2NEG) * gradE12(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE21(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D2121(u1NEG,u2NEG) * gradE21(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE21(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D2122(u1NEG,u2NEG) * gradE22(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE21(u1NEG,u2NEG,l1NEG,l2NEG) + invC21(u1NEG,u2NEG) * grad2E21(phi1,phi2,l1NEG,l2NEG)
+                                                                        - D2211(u1NEG,u2NEG) * gradE11(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE22(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D2212(u1NEG,u2NEG) * gradE12(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE22(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D2221(u1NEG,u2NEG) * gradE21(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE22(u1NEG,u2NEG,l1NEG,l2NEG)
+                                                                        - D2222(u1NEG,u2NEG) * gradE22(u1NEG,u2NEG,phi1NEG,phi2NEG) * gradE22(u1NEG,u2NEG,l1NEG,l2NEG) + invC22(u1NEG,u2NEG) * grad2E22(phi1,phi2,l1NEG,l2NEG)
+                                                   )
+
+         + rhoneg^q * 2.0 * M * (gradE11(u1NEG,u2NEG,phi1,phi2) * gradE11(u1NEG,u2NEG,l1NEG,l2NEG) + E11(u1NEG,u2NEG) * grad2E11(phi1,phi2,l1NEG,l2NEG) +
+                        gradE12(u1NEG,u2NEG,phi1,phi2) * gradE12(u1NEG,u2NEG,l1NEG,l2NEG) + E12(u1NEG,u2NEG) * grad2E12(phi1,phi2,l1NEG,l2NEG) +
+                        gradE21(u1NEG,u2NEG,phi1,phi2) * gradE21(u1NEG,u2NEG,l1NEG,l2NEG) + E21(u1NEG,u2NEG) * grad2E21(phi1,phi2,l1NEG,l2NEG) +
+                        gradE22(u1NEG,u2NEG,phi1,phi2) * gradE22(u1NEG,u2NEG,l1NEG,l2NEG) + E22(u1NEG,u2NEG) * grad2E22(phi1,phi2,l1NEG,l2NEG) )
+        )
+        +  int1d(Th,3)(CurlyNEG * phi2)
+        + on(2,l1NEG=0) //dirichlet
+        + on(1,l2NEG=0) // symmetric bc
+        + on(4,l1NEG=0) // symmetric bc
+      ;
+
+// Check gradJ
+varf J1(dummy,w) = 0.5 * (nu12neg - nutarget)^2; //chiaramente sbagliato da cambiare J1 e J2
+varf J2(dummy,w) = 0.5 * (nu12pos - nutarget)^2; //ma idea qst
 
 varf gradJ (dummy, psi) =
-    int2d(Th) (q*w^(q-1)*psi*  L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
+    int2d(Th) (q*rho^(q-1)*psi*  L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
                                                                    + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
                                                                    + invC21(u1,u2) * gradE21(u1,u2,l1,l2)
                                                                    + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
-             + q*w^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
+             + q*rho^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
                                        + E12(u1,u2) * gradE12(u1,u2,l1,l2)
                                        + E21(u1,u2) * gradE21(u1,u2,l1,l2)
                                        + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
@@ -202,6 +359,7 @@ varf gradJ (dummy, psi) =
 real[int] j1 = J1(0,Xhp);
 real[int] j2 = J2(0,Xhp);
 j2 = j2 - j1;
+j2 = (2*eps)^(-1)*j2;
 real[int] dJ = gradJ(0, Xhp);
 j1 = j2 - dJ;
 cout << " || RHS - GRAD ||_inf = " << j1.linfty << endl;
