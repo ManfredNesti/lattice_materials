@@ -1,0 +1,89 @@
+// ***************************************************************************
+// Params
+// ***************************************************************************
+
+// Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
+int[int] ffordervel = [1];
+
+// Mesh
+int n = 30;
+mesh Th = square(n, n, [x, y]);
+
+// Density space
+fespace Xh1(Th,P1);
+fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
+Xhp v,     // density
+    vHelm, // Helmholtz filtered density
+    vHeav, // Heaviside filtered density
+    psi,
+    lz,
+    uz;     // density, filtered density, test density, params for IPOPT
+Xh1 m11, m12, m22; // metric computation utilities
+
+// Displacement space
+fespace Vh(Th, [P1, P1]);
+Vh [u1,u2],       // displacement
+   [u10,u20],     // old displacement (for Newton)
+   [psi1,psi2],   // test displacement
+   [varu1,varu2], // displacement increments (for Newton)
+   [err1,err2],   // errors (for Newton)
+   [l1, l2],      // lambda
+   [phi1, phi2];  // test lambda
+
+// Area space
+fespace Xh0(Th, P0); // periodic = [[2,y],[4,y],[1,x],[3,x]]);
+Xh0 vol = area;
+real Volume = int2d(Th)(1.);
+
+// Params
+real nu12;
+real nu = 0.3;
+real E = 1.;
+real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
+real M = E/(2*(1+nu));
+real d1 = 1.;        // u traction given
+real q = 4.;         // power penalty law coefficint
+real vf = 0.3;       // volume fraction
+real nutarget = 0.3; // nu target
+
+// Inital density
+int rnd = 0;
+int seed = 10;
+if (rnd) {
+  srandom(10);
+  for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
+} else {
+  // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
+  v = abs(sin(0.5*pi*x)*sin(1*pi*y));
+  // v = 1;
+  // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
+  // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
+}
+plot(v, fill = 1, cmm="Initial density", wait=0);
+
+// IPOPT params
+real [int] lm(1);
+int IPOPTmaxiter = 1;
+int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
+gvi = 0;
+Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
+real tolv = 0.;
+real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
+
+// Helmholtz filtering
+int helm = 0;
+real radius = 1./50^2; // filtering radius
+
+// Heaviside filtering
+int heav = 0;
+
+// Mesh adaptivity
+int meshad = 0;
+real tolmesh = 0.0001;
+real stopmesh = tolmesh + 1.;
+real tau = .00001;
+real maxsK;
+int ntold = Th.nt;
+
+// Main params
+int maxit = 1;

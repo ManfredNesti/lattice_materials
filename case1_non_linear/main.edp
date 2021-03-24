@@ -1,0 +1,85 @@
+load "ff-Ipopt";
+load "ffrandom";
+load "iovtk";
+
+int ii = 0;
+int jj = 0;
+
+include "macros.edp"
+include "params.edp";
+include "print_params.edp";
+include "helmholtz.edp"
+include "J.edp";
+include "gradJ.edp";
+include "constraints.edp";
+
+// ***************************************************************************
+// Main
+// ***************************************************************************
+include "makemetrica.edp";
+while(stopmesh > tolmesh && ii < maxit){
+	jj = 0;
+
+	IPOPT(J, gradJ, ipC, ipGradC, v[],
+	  lb  = xlb[], ub  = xub[],
+   	  clb = clb  , cub = cub  ,
+	  checkindex = 1, structjacc = [gvi,gvj],
+      maxiter = IPOPTmaxiter, warmstart = ii,
+	  lm = lm, uz = uz[], lz = lz[], tol=1e-1
+	  //printlevel = 1,
+	  //derivativetest="first-order");
+      //,maxiter=10);
+	  );
+
+  // Helmholtz filtering
+	if(helm){
+  	helmholtz;
+  	plot(v,  wait = 1, fill = 1, cmm = "Density per-Helmholtz");
+  	plot(vHelm, wait = 1, fill = 1, cmm = "Density post-Helmholtz");
+  	v = vHelm;
+	}
+
+	// Mesh adaptivity
+  if(meshad){
+    maxsK = 1;
+    ntold = Th.nt;
+    makemetrica(tau);
+  	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+  	plot(Th, wait = 1, cmm="New mesh");
+  	cout << "maxsK = " << maxsK << endl;
+  }
+
+	// Heaviside filtering
+	if(heav){
+    plot(v,  wait = 1, fill = 1, cmm = "Density per-Heaviside");
+		real beta = 10*(ii < 19) + 7*(ii == 19);
+		vHeav = 0.5 + tanh(beta*(v-0.5))/(2*tanh(0.5*beta));
+    plot(vHeav, wait = 1, fill = 1, cmm = "Density post-Heaviside");
+    v = vHeav;
+	}
+
+  // Mesh projection (only for mesh adaptivity)
+  if(meshad){
+  	v = v;
+  	xlb = xlb;
+  	xub = xub;
+  	gvi = gvi;
+  	gvj = 0:Xhp.ndof-1;
+  	lz = lz;
+  	uz = uz;
+  	m11 = m11;
+  	m12 = m12;
+  	m22 = m22;
+
+  	stopmesh = abs(Th.nt - real(ntold))/ntold;
+  }
+
+	ii += 1;
+
+	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
+	savevtk("results_case1_non_linear/iter"+(ii-1)+".vtk", Th, v, dataname="Density", order=ffordervel);
+}
+
+cout << Th.nt << endl;
+
+plot(v,  wait = 1, fill = 1, cmm = "Final density");
