@@ -57,7 +57,7 @@ real E = 1.;
 real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
 real M = E/(2*(1+nu));
 real nu12;
-real d1 = 1.; //u traction given
+real d1 = 0.1; //u traction given
 
 real Volume = int2d(Th)(1.);
 
@@ -217,7 +217,7 @@ func real J(real[int] & v)
 	// Iterations
 	while (loopcount <= loopmax && res >= tol){
 	    loopcount ++;
-	    cout << "Loop " << loopcount << endl;
+	    // cout << "Loop " << loopcount << endl;
 
 	    // Solve
 	    primallinearized;
@@ -240,10 +240,7 @@ func real J(real[int] & v)
 	nu12 = - d2 / d1; //estimated nu
 
   cout << "*********************************************" << endl;
-  cout << "j = " << jj << endl;
   cout << "Poisson's ratio = " << nu12 << endl;
-
-  jj = jj + 1;
 
 	return 0.5 * (nu12 - nutarget)^2;
 }
@@ -302,6 +299,9 @@ func real[int] gradJ(real[int] & v)
         			    				               + E21(u1,u2) * gradE21(u1,u2,l1,l2)
         			                           + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
       ;
+
+  cout << "call to dual: j = " << jj << endl;
+  jj = jj + 1;
 
   dJ = gradient(0, Xhp);
   return dJ;
@@ -378,7 +378,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
-      maxiter = 5, warmstart = ii,
+      maxiter = 35, warmstart = ii,
 	  lm = lm, uz = uz[], lz = lz[], tol=1e-5
 	  //printlevel = 1,
 	  //derivativetest="first-order");
