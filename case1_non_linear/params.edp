@@ -50,7 +50,7 @@ real nutarget = 0.3; // nu target
 int rnd = 0;
 int seed = 10;
 if (rnd) {
-  srandom(10);
+  srandom(seed);
   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
 } else {
   // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));

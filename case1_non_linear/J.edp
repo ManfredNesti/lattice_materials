@@ -8,7 +8,7 @@ func real J(real[int] & v)
   plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
 
   cout << "*********************************************" << endl;
-  cout << "Primal problem ..." << endl;
+  cout << "PRIMAL PROBLEM ..." << endl;
   // Newton step for primal problem
   problem primallinearized([varu1,varu2], [psi1, psi2]) =
     int2d(Th) (w^q * L * (2.0*detF(u10,u20)-1.) * (dx(psi1)*F22(u10,u20) + dy(psi2)*F11(u10,u20) - dy(psi1)*F21(u10,u20) - dx(psi2)*F12(u10,u20))
@@ -90,11 +90,8 @@ func real J(real[int] & v)
 	real d2 = int1d(Th,3)(u2);
 	nu12 = - d2 / d1; // estimated nu
 
-  cout << "j = " << jj << endl;
   cout << "POISSON'S RATIO = " << nu12 << endl;
   cout << "*********************************************" << endl;
-
-  jj = jj + 1;
 
 	return 0.5 * (nu12 - nutarget)^2;
 }
