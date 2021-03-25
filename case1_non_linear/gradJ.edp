@@ -58,9 +58,9 @@ func real[int] gradJ(real[int] & v)
 
   dJ = gradient(0, Xhp);
   cout << "jj = " << jj << endl;
+  cout << "DUAL PROBLEM: done!" << endl;
   cout << "*********************************************" << endl;
-
   jj += 1;
-
+  
   return dJ;
 }

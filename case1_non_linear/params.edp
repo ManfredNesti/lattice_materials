@@ -10,15 +10,15 @@ int n = 30;
 mesh Th = square(n, n, [x, y]);
 
 // Density space
-fespace Xh1(Th,P1);
-fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
+fespace Xhp(Th,P1);
+// fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
 Xhp v,     // density
     vHelm, // Helmholtz filtered density
     vHeav, // Heaviside filtered density
     psi,
     lz,
     uz;     // density, filtered density, test density, params for IPOPT
-Xh1 m11, m12, m22; // metric computation utilities
+Xhp m11, m12, m22; // metric computation utilities
 
 // Displacement space
 fespace Vh(Th, [P1, P1]);
@@ -47,7 +47,7 @@ real vf = 0.3;       // volume fraction
 real nutarget = 0.3; // nu target
 
 // Inital density
-int rnd = 0;
+int rnd = 1;
 int seed = 10;
 if (rnd) {
   srandom(seed);
@@ -63,7 +63,7 @@ plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 1;
+int IPOPTmaxiter = 15;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
