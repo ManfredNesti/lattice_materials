@@ -69,7 +69,7 @@ gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
 real tolv = 0.;
 real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
-
+real IPOPTtol = 1e-3;
 // Helmholtz filtering
 int helm = 0;
 real radius = 1./50^2; // filtering radius

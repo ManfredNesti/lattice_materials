@@ -25,7 +25,7 @@ while(stopmesh > tolmesh && ii < maxit){
    	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
       maxiter = IPOPTmaxiter, warmstart = ii,
-	  lm = lm, uz = uz[], lz = lz[], tol=1e-1
+	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
 	  //printlevel = 1,
 	  //derivativetest="first-order");
       //,maxiter=10);
