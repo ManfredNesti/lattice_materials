@@ -1,0 +1,15 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ error operator (  <St4pairIP6FEbaseId5v_fesEiE> 
+ List of choices 
+	 (	  <d> :   <P2KNIdE> )
+
+ Error line number 8, in file gradJ.edp, before  token )
+
+  current line = 8
+Compile error : 
+	line number :8, )
+error Compile error : 
+	line number :8, )
+ code = 1 mpirank: 0

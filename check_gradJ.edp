@@ -238,7 +238,7 @@ func real[int] gradJ(real[int] & v)
                             gradE21(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2) + E21(u1,u2) * grad2E21(phi1,phi2,l1,l2) +
                             gradE22(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2) + E22(u1,u2) * grad2E22(phi1,phi2,l1,l2) )
            )
-           + int1d(Th,3)(Curly * phi2)
+           - int1d(Th,3)(Curly * phi2)
            + on(2,l1=0) //dirichlet
            + on(1,l2=0) // symmetric bc
            + on(4,l1=0) // symmetric bc

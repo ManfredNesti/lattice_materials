@@ -37,24 +37,25 @@ real Volume = int2d(Th)(1.);
 
 // Params
 real nu12;
-real nu = -0.9;
+real nu = 0.3;
 real E = 1.;
 real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
 real M = E/(2*(1+nu));
-real d1 = 1;        // u traction given
+real d1 = 0.01;        // u traction given
 real q = 4.;         // power penalty law coefficint
-real vf = 0.3;       // volume fraction
-real nutarget = - 1; // nu target
+real vf = 0.4;       // volume fraction
+real nutarget = - 0.6; // nu target
 
 // Inital density
-int rnd = 0;
+int rnd = 1;
 int seed = 10;
 if (rnd) {
   srandom(seed);
   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
 } else {
   // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
-  v = abs(sin(0.5*pi*x)*sin(1*pi*y));
+  // v = abs(sin(0.5*pi*x)*sin(1*pi*y));
+  v = cos(pi*(x-0.5))*cos(pi*(y-0.5));
   // v = 1;
   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
@@ -63,7 +64,7 @@ plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 15;
+int IPOPTmaxiter = 100;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
