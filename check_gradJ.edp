@@ -259,8 +259,8 @@ func real[int] gradJ(real[int] & v)
 }
 
 // Check gradJ
-real J1 = J(rhopos[]); //chiaramente sbagliato da cambiare J1 e J2
-real J2 = J(rhoneg[]); //ma idea qst
+real J2 = J(rhopos[]);
+real J1 = J(rhoneg[]);
 
 cout << "Solving primal problem" << endl;
 
