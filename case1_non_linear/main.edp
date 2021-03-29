@@ -20,6 +20,17 @@ include "makemetrica.edp";
 while(stopmesh > tolmesh && ii < maxit){
 	jj = 0;
 
+	//change power pensalty coefficient
+	if(pen){
+		// change q
+		q = 3/maxit * ii + 1;
+		//paper soli usa exp
+
+	}
+	else{
+		q = q_fixed;
+	}
+
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,

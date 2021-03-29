@@ -42,7 +42,6 @@ real E = 1.;
 real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
 real M = E/(2*(1+nu));
 real d1 = 0.01;        // u traction given
-real q = 4.;         // power penalty law coefficint
 real vf = 0.4;       // volume fraction
 real nutarget = - 0.6; // nu target
 
@@ -71,6 +70,13 @@ Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
 real tolv = 0.;
 real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
 real IPOPTtol = 1e-3;
+
+//power penalty law coefficint
+int pen = 0;
+real q = 1.;
+real q_fixed = 4.;
+
+
 // Helmholtz filtering
 int helm = 0;
 real radius = 1./50^2; // filtering radius
