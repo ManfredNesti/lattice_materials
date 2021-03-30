@@ -85,9 +85,9 @@ real radius = 1./50^2; // filtering radius
 int heav = 0;
 
 // Sigmund filtering
-int sig = 0;
-real beta = 1.;
-real eta = 0.5;
+int sig = 1;
+real beta = 4.;
+real eta = 0.4;
 
 // Mesh adaptivity
 int meshad = 0;
@@ -98,4 +98,4 @@ real maxsK;
 int ntold = Th.nt;
 
 // Main params
-int maxit = 3;
+int maxit = 6;

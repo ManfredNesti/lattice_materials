@@ -21,7 +21,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	jj = 0;
 
 	// Power penalty law
-	if(pen) q = 3/maxit * ii + 1;
+	if(pen) q = 4 - exp(- ii / 2.); //q = 3/maxit * ii + 1;
 	else q = qmax;
 
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
@@ -64,6 +64,7 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	// Sigmund filtering
 	if(sig){
+		eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
 		plot(v,  wait = 1, fill = 1, cmm = "Density per-Sigmund");
 		vSig = (tanh(beta * eta) + tanh(beta * (v - eta))) / (tanh(beta * eta) + tanh(beta * (1 - eta)));
 		plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
