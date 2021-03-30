@@ -75,7 +75,7 @@ real IPOPTtol = 1e-3;
 // Power penalty
 int pen = 1;
 real q = 1.;
-real qmax = 4.;
+real qmax = 3.;
 
 // Helmholtz filtering
 int helm = 0;
