@@ -15,6 +15,7 @@ fespace Xhp(Th,P1);
 Xhp v,     // density
     vHelm, // Helmholtz filtered density
     vHeav, // Heaviside filtered density
+    vSig, // Heaviside filtered density
     psi,
     lz,
     uz;     // density, filtered density, test density, params for IPOPT
@@ -52,18 +53,18 @@ if (rnd) {
   srandom(seed);
   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
 } else {
-  // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
-  // v = abs(sin(0.5*pi*x)*sin(1*pi*y));
-  v = cos(pi*(x-0.5))*cos(pi*(y-0.5));
   // v = 1;
   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
+  // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
+  // v = abs(sin(0.5*pi*x)*sin(1*pi*y));
+  v = cos(pi*(x-0.5))*cos(pi*(y-0.5));
 }
 plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 5;
+int IPOPTmaxiter = 40;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
@@ -71,8 +72,8 @@ real tolv = 0.;
 real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
 real IPOPTtol = 1e-3;
 
-//power penalty law coefficint
-int pen = 0;
+// Power penalty
+int pen = 1;
 real q = 1.;
 real qmax = 4.;
 
@@ -83,6 +84,11 @@ real radius = 1./50^2; // filtering radius
 // Heaviside filtering
 int heav = 0;
 
+// Sigmund filtering
+int sig = 0;
+real beta = 1.;
+real eta = 0.5;
+
 // Mesh adaptivity
 int meshad = 0;
 real tolmesh = 0.0001;
@@ -92,4 +98,4 @@ real maxsK;
 int ntold = Th.nt;
 
 // Main params
-int maxit = 10;
+int maxit = 3;

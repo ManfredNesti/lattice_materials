@@ -20,16 +20,9 @@ include "makemetrica.edp";
 while(stopmesh > tolmesh && ii < maxit){
 	jj = 0;
 
-	//change power pensalty coefficient
-	if(pen){
-		// change q
-		q = 3/maxit * ii + 1;
-		//paper soli usa exp
-
-	}
-	else{
-		q = qmax;
-	}
+	// Power penalty law
+	if(pen) q = 3/maxit * ii + 1;
+	else q = qmax;
 
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
 	  lb  = xlb[], ub  = xub[],
@@ -63,10 +56,18 @@ while(stopmesh > tolmesh && ii < maxit){
 	// Heaviside filtering
 	if(heav){
     plot(v,  wait = 1, fill = 1, cmm = "Density per-Heaviside");
-		real beta = 10*(ii < 19) + 7*(ii == 19);
-		vHeav = 0.5 + tanh(beta*(v-0.5))/(2*tanh(0.5*beta));
+		real betaH = 10*(ii < 19) + 7*(ii == 19);
+		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
     plot(vHeav, wait = 1, fill = 1, cmm = "Density post-Heaviside");
     v = vHeav;
+	}
+
+	// Sigmund filtering
+	if(sig){
+		plot(v,  wait = 1, fill = 1, cmm = "Density per-Sigmund");
+		vSig = (tanh(beta * eta) + tanh(beta * (v - eta))) / (tanh(beta * eta) + tanh(beta * (1 - eta)));
+		plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
+		v = vSig;
 	}
 
   // Mesh projection (only for mesh adaptivity)
