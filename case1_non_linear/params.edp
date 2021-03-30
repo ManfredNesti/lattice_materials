@@ -46,7 +46,7 @@ real vf = 0.4;       // volume fraction
 real nutarget = - 0.6; // nu target
 
 // Inital density
-int rnd = 1;
+int rnd = 0;
 int seed = 10;
 if (rnd) {
   srandom(seed);
@@ -63,7 +63,7 @@ plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 100;
+int IPOPTmaxiter = 5;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
@@ -74,8 +74,7 @@ real IPOPTtol = 1e-3;
 //power penalty law coefficint
 int pen = 0;
 real q = 1.;
-real q_fixed = 4.;
-
+real qmax = 4.;
 
 // Helmholtz filtering
 int helm = 0;
@@ -93,4 +92,4 @@ real maxsK;
 int ntold = Th.nt;
 
 // Main params
-int maxit = 1;
+int maxit = 10;

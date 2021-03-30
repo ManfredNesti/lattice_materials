@@ -28,7 +28,7 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	}
 	else{
-		q = q_fixed;
+		q = qmax;
 	}
 
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
