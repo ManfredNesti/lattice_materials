@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Mesh
-int n = 30;
+int n = 50;
 mesh Th = square(n, n, [x, y]);
 
 // Density space
@@ -15,7 +15,7 @@ fespace Xhp(Th,P1);
 Xhp v,     // density
     vHelm, // Helmholtz filtered density
     vHeav, // Heaviside filtered density
-    vSig, // Heaviside filtered density
+    wSig, // Sigmund heaviside filtered density
     psi,
     lz,
     uz;     // density, filtered density, test density, params for IPOPT
@@ -40,11 +40,12 @@ real Volume = int2d(Th)(1.);
 real nu12;
 real nu = 0.3;
 real E = 1.;
-real L = E*nu/(1+nu)/(1-2*nu); // E*nu/(1-nu^2) HO TENUTO QUELLO SBAGLIATO
+real L = E*nu/(1-nu^2);
 real M = E/(2*(1+nu));
 real d1 = 0.01;        // u traction given
 real vf = 0.4;       // volume fraction
 real nutarget = - 1.0; // nu target
+real eps = 1e-6;
 
 // Inital density
 int rnd = 0;
@@ -58,7 +59,7 @@ if (rnd) {
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
   // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
   // v = abs(sin(0.5*pi*x)*sin(1*pi*y));
-  v = cos(pi*(x-0.5))*cos(pi*(y-0.5));
+  v = cos(pi*(x-0.5))*cos(pi*(y-0.5)) + eps;
 }
 plot(v, fill = 1, cmm="Initial density", wait=0);
 
@@ -84,8 +85,13 @@ real radius = 1./50^2; // filtering radius
 // Heaviside filtering
 int heav = 0;
 
+// Main params
+int maxit = 6;
+
 // Sigmund filtering
 int sig = 1;
+real betamax = 50;
+//real beta = betamax / (2.^maxit); // beta raddoppia ad ogni ii fino a beta_max
 real beta = 4.;
 real eta = 0.4;
 
@@ -96,6 +102,3 @@ real stopmesh = tolmesh + 1.;
 real tau = .00001;
 real maxsK;
 int ntold = Th.nt;
-
-// Main params
-int maxit = 6;

@@ -53,7 +53,7 @@ if(meshad){
 
 cout << "-----" << endl;
 
-cout << "Sigmund filtering: " << heav <<  endl;
+cout << "Sigmund filtering: " << sig <<  endl;
 cout << "beta: " << beta << endl;
 cout << "eta: " << eta << endl;
 

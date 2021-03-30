@@ -1,10 +1,24 @@
 // ***************************************************************************
 // Gradient of the functional (lagrangian approach)
 // ***************************************************************************
+
+//Sigmund filter derivative
+//func real[int] dfilter(real[int] psi) {return dx(psi);}
+// (1/(tanh(beta * eta) + tanh(beta * (1-eta)) ) * beta / (cosh(beta*(psi-eta)))^2)
+
 func real[int] gradJ(real[int] & v)
 {
   Xhp w;
   w[] = v;
+
+  eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+  // Sigmund filtering
+	if(sig){
+		//beta = 2. * beta;
+		wSig = (tanh(beta * eta) + tanh(beta * (w - eta))) / (tanh(beta * eta) + tanh(beta * (1 - eta)));
+		w = wSig;
+	}
+
   J(w[]);
   real [int] dJ(Xhp.ndof);
 	real Curly = (nu12 - nutarget) / d1 ;
@@ -45,13 +59,17 @@ func real[int] gradJ(real[int] & v)
 			     + on(4,l1=0) // symmetric bc
 			   ;
 
+  real dfilter = 1/(tanh(beta * eta) + tanh(beta * (1-eta))) * beta / (cosh(beta*(w-eta)))^2;
+
   varf gradient(SS, psi) =
-      int2d(Th) (q*w^(q-1)*psi*  L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
+      int2d(Th) (q*w^(q-1) * dfilter * psi *
+                                     L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
           			                                                     + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
           			          																					 + invC21(u1,u2) * gradE21(u1,u2,l1,l2)
           			          																					 + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
 
-       				 + q*w^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
+       				 + q*w^(q-1)* dfilter * psi *
+                                2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
         			                           + E12(u1,u2) * gradE12(u1,u2,l1,l2)
         			    				               + E21(u1,u2) * gradE21(u1,u2,l1,l2)
         			                           + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
