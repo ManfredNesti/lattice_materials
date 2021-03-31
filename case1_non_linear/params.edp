@@ -90,8 +90,8 @@ int maxit = 6;
 // Sigmund filtering
 int sig = 1;
 real betamax = 50;
-//real beta = betamax / (2.^maxit); // beta raddoppia ad ogni ii fino a beta_max
-real beta = 4.;
+real beta = betamax / (2.^20); // beta raddoppia ad ogni ii fino a beta_max a 20
+// real beta = 4.;
 real eta = 0.4;
 
 // Mesh adaptivity
