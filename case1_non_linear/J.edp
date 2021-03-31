@@ -10,7 +10,7 @@ func real J(real[int] & v)
   // Sigmund filtering
 	if(sig){
 		//beta = 2. * beta;
-		wSig = (tanh(beta * eta) + tanh(beta * (w - eta))) / (tanh(beta * eta) + tanh(beta * (1 - eta)));
+		wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta))) / (tanh(beta * eta) + tanh(beta * (1 - eta))) + xlb;
 		w = wSig;
 	}
   plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
