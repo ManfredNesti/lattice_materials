@@ -3,6 +3,9 @@ int[int] ffordervel = [1];
 int ii = 0;
 
 int jj = 0;
+real eta = 0.4;
+int sig = 1;
+real beta = 4.;
 
 // Macro
 //Gradient of a vector field (u1, u2)
@@ -89,7 +92,8 @@ mesh   Th = square(30,30);
 //density space
 fespace Xh(Th,P1);
 fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
-Xhp rho, drho;
+Xhp rho, drho, wSig;
+Xhp xlb = 1e-4, xub = 1; // lower and upper bounds
 rho = abs(5+sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
 drho = abs(5+cos(2*pi*x*0.25)*cos(2*pi*y*0.5));
 Xhp rhopos = rho + eps*drho;
@@ -119,6 +123,19 @@ func real J(real[int] & v)
 {
   Xhp w; //density
   w[] = v;
+
+  // FILTER
+  plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
+  eta = 0.4;
+  // Sigmund filtering
+	if(sig){
+		//beta = 2. * beta;
+		wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
+                   / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+		w = wSig;
+	}
+  plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
+  // END FILTER
 
   cout << "Solving primal problems..." << endl;
   //Newton method for primal
@@ -204,6 +221,19 @@ func real[int] gradJ(real[int] & v)
 {
   Xhp w;
   w[] = v;
+  // FILTER
+  eta = 0.4;
+  // Sigmund filtering
+	if(sig){
+		//beta = 2. * beta;
+		wSig = (1-xlb)*(tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
+                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+		w = wSig;
+	}
+  // call to J
+  J(w[]);
+  // END FILTER
+
   real [int] dJ(Xhp.ndof);
 
   real Curly = (nu12 - nutarget) / d1 ;

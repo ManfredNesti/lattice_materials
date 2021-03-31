@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Mesh
-int n = 50;
+int n = 30;
 mesh Th = square(n, n, [x, y]);
 
 // Density space
@@ -89,8 +89,9 @@ int maxit = 6;
 
 // Sigmund filtering
 int sig = 1;
-real betamax = 50;
-real beta = betamax / (2.^20); // beta raddoppia ad ogni ii fino a beta_max a 20
+real betamax = 1.5;
+real betamin = 1e-3; // betamax / (2.^20); // beta raddoppia ad ogni ii fino a beta_max a 20
+real beta = 1;
 // real beta = 4.;
 real eta = 0.4;
 
