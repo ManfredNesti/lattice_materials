@@ -15,7 +15,8 @@ func real[int] gradJ(real[int] & v)
   // Sigmund filtering
 	if(sig){
 		//beta = 2. * beta;
-		wSig = (1-xlb)*(tanh(beta * eta) + tanh(beta * (w - xlb - eta))) / (tanh(beta * eta) + tanh(beta * (1 - eta))) + xlb;
+		wSig = (1-xlb)*(tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
+                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
 		w = wSig;
 	}
 
@@ -59,7 +60,8 @@ func real[int] gradJ(real[int] & v)
 			     + on(4,l1=0) // symmetric bc
 			   ;
 
-  real dfilter = (1-xlb)/(tanh(beta * eta) + tanh(beta * (1-eta))) * beta / (cosh(beta*(w - xlb -eta)))^2;
+  real dfilter = (1-xlb)/(tanh(beta * eta) + tanh(beta * (1 - xlb -eta))) *
+                  beta / (cosh(beta*(w - xlb -eta)))^2;
 
   varf gradient(SS, psi) =
       int2d(Th) (q*w^(q-1) * dfilter * psi *
