@@ -6,15 +6,16 @@ func real J(real[int] & v)
   Xhp w; //density
   w[] = v;
   plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
-  eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
-  // Sigmund filtering
-	if(sig){
-		//beta = 2. * beta;
-		wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
-                   / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-		w = wSig;
-	}
-  plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
+
+  // eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+  // // Sigmund filtering
+	// if(sig){
+	// 	//beta = 2. * beta;
+	// 	wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
+  //                  / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+	// 	w = wSig;
+	// }
+  // plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
 
   cout << "*********************************************" << endl;
   cout << "PRIMAL PROBLEM ..." << endl;
