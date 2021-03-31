@@ -68,7 +68,7 @@ if (rnd) {
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
   // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
   // v = abs(sin(0.5*pi*x)*sin(1*pi*y));
-  v = cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+  v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
 }
 plot(v, fill = 1, cmm="Initial density", wait=0);
 
@@ -89,10 +89,11 @@ int maxit = 6;
 
 // Sigmund filtering
 int sig = 1;
+int sigIN = 1; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
 real betamax = 1.5;
-real betamin = 1e-3; // betamax / (2.^20); // beta raddoppia ad ogni ii fino a beta_max a 20
+real betamin = 1e-3;
+// real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
 real beta = 1;
-// real beta = 4.;
 real eta = 0.4;
 
 // Mesh adaptivity

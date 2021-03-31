@@ -20,10 +20,8 @@ include "makemetrica.edp";
 while(stopmesh > tolmesh && ii < maxit){
 	jj = 0;
 
-	cout << " beta inizio : " << beta << endl;
-
 	// Power penalty law
-	if(pen) q = 4 - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
+	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
 	else q = qmax;
 
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
@@ -66,9 +64,10 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	// Sigmund filtering
 	if(sig){
-		beta = 2. * beta; //da capire come cambiare beta, quando ...
+		beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
+		// beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
 		eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
-		plot(v,  wait = 1, fill = 1, cmm = "Density per-Sigmund");
+		plot(v,  wait = 1, fill = 1, cmm = "Density pre-Sigmund");
 		vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
 	                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
 		plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
