@@ -1,0 +1,13 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ The Identifier vSig does not exist 
+
+ Error line number 72, in file main.edp, before  token vSig
+
+  current line = 71
+Compile error : 
+	line number :72, vSig
+error Compile error : 
+	line number :72, vSig
+ code = 1 mpirank: 0

@@ -15,7 +15,8 @@ fespace Xhp(Th,P1);
 Xhp v,     // density
     vHelm, // Helmholtz filtered density
     vHeav, // Heaviside filtered density
-    wSig, // Sigmund heaviside filtered density
+    vSig,   // Sigmund tanh filtered density
+    wSig,  // Sigmund tanh filtered density (internal)
     psi,
     lz,
     uz;     // density, filtered density, test density, params for IPOPT
@@ -42,9 +43,9 @@ real nu = 0.3;
 real E = 1.;
 real L = E*nu/(1-nu^2);
 real M = E/(2*(1+nu));
-real d1 = 0.01;        // u traction given
+real d1 = 0.3;        // u traction given
 real vf = 0.4;       // volume fraction
-real nutarget = - 1.0; // nu target
+real nutarget = -1.0; // nu target
 
 // IPOPT params
 real [int] lm(1);
@@ -63,18 +64,18 @@ if (rnd) {
   srandom(seed);
   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
 } else {
-  // v = 1;
+  // v = 0.5;
   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
-  // v = abs(sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
-  // v = abs(sin(0.5*pi*x)*sin(1*pi*y));
-  v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+  // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
+  // v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+  v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
 }
 plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // Power penalty
-int pen = 1;
-real q = 1.;
+int pen = 0;
+real q = 3.;
 real qmax = 3.;
 
 // Helmholtz filtering
@@ -85,16 +86,16 @@ real radius = 1./50^2; // filtering radius
 int heav = 0;
 
 // Main params
-int maxit = 6;
+int maxit = 12;
 
 // Sigmund filtering
 int sig = 1;
-int sigIN = 1; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
+int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
 real betamax = 1.5;
 real betamin = 1e-3;
 // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
-real beta = 1;
-real eta = 0.4;
+real beta = 3.5;
+real eta = 0.5;
 
 // Mesh adaptivity
 int meshad = 0;

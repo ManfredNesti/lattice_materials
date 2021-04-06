@@ -28,7 +28,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
-      maxiter = IPOPTmaxiter, warmstart = ii,
+      maxiter = IPOPTmaxiter + 100*(ii==0), warmstart = ii,
 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
 	  //printlevel = 1,
 	  //derivativetest="first-order");
@@ -64,14 +64,18 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	// Sigmund filtering
 	if(sig){
-		beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
-		// beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
-		eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
-		plot(v,  wait = 1, fill = 1, cmm = "Density pre-Sigmund");
-		vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
-	                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-		plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
-		v = vSig;
+		if(ii != maxit - 1 && (ii <= 6)){
+			// beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
+			// beta = betamax - (betamax - betamin) * exp(- ii / 2); //se vogliamo incrementare più "soft"
+			// eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+			plot(v,  wait = 1, fill = 1, cmm = "Density pre-Sigmund");
+			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
+		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+			plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
+			v = vSig;
+			beta += 1;
+			eta += 0.02;
+		}
 	}
 
   // Mesh projection (only for mesh adaptivity)

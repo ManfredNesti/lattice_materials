@@ -14,7 +14,7 @@ func real[int] gradJ(real[int] & v)
   if(sigIN){
     eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
     //beta = 2 * beta;
-    beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
+    // beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
     wSig = (1-xlb)*(tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
                  / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
   	w = wSig;
