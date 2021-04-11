@@ -68,8 +68,8 @@ if (rnd) {
   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
   // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
-  // v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
-  v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
+  v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+  // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
 }
 plot(v, fill = 1, cmm="Initial density", wait=0);
 
@@ -95,7 +95,7 @@ real betamax = 1.5;
 real betamin = 1e-3;
 // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
 real beta = 3.5;
-real eta = 0.5;
+real eta = 0.45;
 
 // Mesh adaptivity
 int meshad = 0;
