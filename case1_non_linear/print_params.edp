@@ -55,7 +55,7 @@ cout << "-----" << endl;
 
 cout << "Sigmund filtering: " << sig <<  endl;
 cout << "beta: " << beta << endl;
-cout << "eta: " << eta << endl;
+cout << "eta fixed: " << eta << endl;
 
 cout << "-----" << endl;
 

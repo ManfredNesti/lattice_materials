@@ -13,6 +13,7 @@ include "J.edp";
 include "gradJ.edp";
 include "constraints.edp";
 
+ofstream outnu ("output_nu.csv");
 // ***************************************************************************
 // Main
 // ***************************************************************************
@@ -64,7 +65,7 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	// Sigmund filtering
 	if(sig){
-		if(ii != maxit - 1 && (ii <= 6)){
+		if(ii != maxit - 1 ){
 			// beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
 			// beta = betamax - (betamax - betamin) * exp(- ii / 2); //se vogliamo incrementare più "soft"
 			// eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
@@ -74,7 +75,7 @@ while(stopmesh > tolmesh && ii < maxit){
 			plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
 			v = vSig;
 			beta += 1;
-			eta += 0.02;
+			//eta += 0.02;
 		}
 	}
 
@@ -98,6 +99,8 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
 	savevtk("results_case1_non_linear/iter"+(ii-1)+".vtk", Th, v, dataname="Density", order=ffordervel);
+
+	outnu << nu12 << endl;
 }
 
 cout << Th.nt << endl;
