@@ -19,6 +19,7 @@ ofstream outnu ("output_nu.csv");
 // ***************************************************************************
 include "makemetrica.edp";
 while(stopmesh > tolmesh && ii < maxit){
+
 	jj = 0;
 
 	// Power penalty law
@@ -29,7 +30,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
-      maxiter = IPOPTmaxiter + 100*(ii==0), warmstart = ii,
+      maxiter = IPOPTmaxiter + 35*(ii==0), warmstart = ii,
 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
 	  //printlevel = 1,
 	  //derivativetest="first-order");

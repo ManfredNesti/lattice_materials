@@ -49,7 +49,7 @@ real nutarget = -1.0; // nu target
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 40;
+int IPOPTmaxiter = 20;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
