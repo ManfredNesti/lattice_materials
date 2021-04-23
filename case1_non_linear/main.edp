@@ -30,7 +30,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
-      maxiter = IPOPTmaxiter + 35*(ii==0), warmstart = ii,
+      maxiter = IPOPTmaxiter + 35*(ii==0) +35*(ii==5)+35*(ii==6), warmstart = ii,
 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
 	  //printlevel = 1,
 	  //derivativetest="first-order");
