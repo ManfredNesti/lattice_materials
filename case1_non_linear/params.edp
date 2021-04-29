@@ -49,7 +49,7 @@ real Volume = int2d(Th)(1.);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 40;
+int IPOPTmaxiter = 30;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
