@@ -10,7 +10,10 @@ load "MUMPS_seq"
 load "gmsh"
 verbosity = 0;
 
-int esempio = 2;
+int esempio = 5;
+int checkLaplacepb = 0;
+
+mesh Th1;
 
 if (esempio == 1) {
 	mesh Th1 = square(150, 150); // quadrato
@@ -68,9 +71,9 @@ else if (esempio == 2)
 	Vh u = u1+u2+u3+u4;
 	plot(Th,u1,u2,u3,u4,fill=1,cmm="u", wait= 1);
 	plot(Th, u,fill = 1, cmm="u");
-} else
+} else if (esempio == 3)
 {
-	//ex2
+	//ex2 pb with pborders labels
 	mesh Th1 = square(20,20);         // top right
 	fespace Vh1(Th1,P1);
 	Vh1 u1 = exp(-50*(y-x^2)^2), v1;
@@ -91,23 +94,96 @@ else if (esempio == 2)
 	u1 = u1*(y>=0) + u3*(y<0);
 	plot(Th1,u1,fill=1,cmm="u");
 }
+else if (esempio == 4) //same es1 but from 1 cell -> duplicate 2x2 and preserves borders labels
+{
+	mesh Th1 = square(150, 150);                  // [ 0,1]^2
+	mesh Th2 = square(60 ,  60 , [2*x-1, 2*y-1]); // [-1,1]^2
+	fespace Vh1(Th1, P1);
+	fespace Vh2(Th2, P1);
+	Vh1 v1 = exp(-50*(y-x^2)^2); // densità sul quadrato
+	plot(v1, fill = 1, wait=1);
+	Vh2 v2; // densità su Th2
+	for(int i = 0; i < Th2.nt; i++)
+	  for(int j = 0; j < 3; j++)
+	    if      (Th2[i][j].x >= 0 & Th2[i][j].y >= 0) v2[][Vh2(i,j)] = v1( Th2[i][j].x, Th2[i][j].y);
+	    else if (Th2[i][j].x <  0 & Th2[i][j].y >= 0) v2[][Vh2(i,j)] = v1(-Th2[i][j].x, Th2[i][j].y);
+	    else if (Th2[i][j].x <  0 & Th2[i][j].y <  0) v2[][Vh2(i,j)] = v1(-Th2[i][j].x,-Th2[i][j].y);
+	    else                                          v2[][Vh2(i,j)] = v1( Th2[i][j].x,-Th2[i][j].y);
+	plot(v2, fill = 1);
+}
+else //repetition 4x4 of each "new" unit cell: total 16x16 original unit cell
+///DA CAPIRE BENE COSA SERVE LO SHIFT
+{
+	mesh Th1 = square(150, 150);                  // [ 0,1]^2
+	mesh Th2 = square(30 ,  30 , [2*x-1, 2*y-1]); // [-1,1]^2
+	mesh Th4 = square(60 ,  60 , [4*x-2, 4*y-2]); // [-2,2]^2
+	mesh Th8 = square(120, 120 , [8*x-4, 8*y-4]); // [-4,4]^2
+	fespace Vh1(Th1, P1);
+	fespace Vh2(Th2, P1);
+	fespace Vh4(Th4, P1);
+	fespace Vh8(Th8, P1);
+	Vh1 v1 = exp(-50*(y-x^2)^2); // densità sul quadrato
+	plot(v1, fill = 1,  wait = 1);
+	Vh2 v2; // densità su Th2
+	Vh4 v4; // densità su Th4
+	Vh8 v8; // densità su Th8
+	for(int i = 0; i < Th2.nt; i++)
+	  for(int j = 0; j < 3; j++)
+	    if      (Th2[i][j].x >= 0 & Th2[i][j].y >= 0) v2[][Vh2(i,j)] = v1( Th2[i][j].x, Th2[i][j].y);
+	    else if (Th2[i][j].x <  0 & Th2[i][j].y >= 0) v2[][Vh2(i,j)] = v1(-Th2[i][j].x, Th2[i][j].y);
+	    else if (Th2[i][j].x <  0 & Th2[i][j].y <  0) v2[][Vh2(i,j)] = v1(-Th2[i][j].x,-Th2[i][j].y);
+	    else                                          v2[][Vh2(i,j)] = v1( Th2[i][j].x,-Th2[i][j].y);
+	plot(v2, fill = 1,  wait = 1);
+	// traslo nel primo quadrante
+	Vh2 u2x =1, u2y = 1;
+	real [int] v2old = v2[];
+	Th2 = movemesh(Th2,[x+u2x,y+u2y]);
+	v2 = v2;
+	v2[] = v2old;
+	plot(v2, fill = 1,cmm = "v2 dopo shift",  wait = 1);
+	for(int i = 0; i < Th4.nt; i++)
+	  for(int j = 0; j < 3; j++)
+	    if      (Th4[i][j].x >= 0 & Th4[i][j].y >= 0) v4[][Vh4(i,j)] = v2( Th4[i][j].x, Th4[i][j].y);
+	    else if (Th4[i][j].x <  0 & Th4[i][j].y >= 0) v4[][Vh4(i,j)] = v2(-Th4[i][j].x, Th4[i][j].y);
+	    else if (Th4[i][j].x <  0 & Th4[i][j].y <  0) v4[][Vh4(i,j)] = v2(-Th4[i][j].x,-Th4[i][j].y);
+	    else                                          v4[][Vh4(i,j)] = v2( Th4[i][j].x,-Th4[i][j].y);
+	plot(v4, fill = 1,  wait = 1);
+	// traslo nel primo quadrante
+	Vh4 u4x = 2, u4y = 2;
+	real [int] v4old = v4[];
+	Th4 = movemesh(Th4,[x+u4x,y+u4y]);
+	v4 = v4;
+	v4[] = v4old;
+	plot(v4, fill = 1,cmm = "v4 dopo shift",  wait = 1);
+	for(int i = 0; i < Th8.nt; i++)
+	  for(int j = 0; j < 3; j++)
+	    if      (Th8[i][j].x >= 0 & Th8[i][j].y >= 0) v8[][Vh8(i,j)] = v4( Th8[i][j].x, Th8[i][j].y);
+	    else if (Th8[i][j].x <  0 & Th8[i][j].y >= 0) v8[][Vh8(i,j)] = v4(-Th8[i][j].x, Th8[i][j].y);
+	    else if (Th8[i][j].x <  0 & Th8[i][j].y <  0) v8[][Vh8(i,j)] = v4(-Th8[i][j].x,-Th8[i][j].y);
+	    else                                          v8[][Vh8(i,j)] = v4( Th8[i][j].x,-Th8[i][j].y);
+	plot(v8, fill = 1);
+}
 
-// Parameters
-func f = x*y*y; //right hand side
-fespace Vh(Th1,P1);
-Vh uh, vh;
-// Problem
-problem laplace (uh, vh)
-    = int2d(Th1)(
-        dx(uh)*dx(vh)
-        + dy(uh)*dy(vh)
-    )
-    + int2d(Th1)(
-        - f*vh
-    )
-    + on (1,2,3,4, uh = 0)
-    ;
-// Solve
-laplace;
-// Plot
-plot(uh, fill=1, wait=1, cmm="u1");
+if (checkLaplacepb)
+{
+	// Parameters
+	func f = x*y*y; //right hand side
+	fespace Vh(Th1,P1);
+	Vh uh, vh;
+	// Problem
+	problem laplace (uh, vh)
+	    = int2d(Th1)(
+	        dx(uh)*dx(vh)
+	        + dy(uh)*dy(vh)
+	    )
+	    + int2d(Th1)(
+	        - f*vh
+	    )
+	    + on (1,2,3,4, uh = 0)
+	    ;
+	// Solve
+	laplace;
+	// Plot
+	plot(uh, fill=1, wait=1, cmm="u1");
+
+}

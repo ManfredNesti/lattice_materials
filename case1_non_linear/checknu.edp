@@ -21,6 +21,8 @@ Th = Th+Th3;        // 4x4 super-grid
 v = v*(y>=0) + v3*(y<0);
 plot(Th,v,fill=1,cmm="Final density in 2x2 material cells");
 
+
+
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem
 problem primallinearized([varu1,varu2], [psi1, psi2]) =
