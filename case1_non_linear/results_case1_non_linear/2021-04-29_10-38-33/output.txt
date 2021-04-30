@@ -1,0 +1,15 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ The identifier u2 exists 
+ 	  the existing type is <St4pairIP6FEbaseId5v_fesEiE>
+ 	  the new  type is <St4pairIP6FEbaseId5v_fesEiE>
+
+ Error line number 10, in file checknu.edp, before  token ;
+
+  current line = 10
+Compile error : 
+	line number :10, ;
+error Compile error : 
+	line number :10, ;
+ code = 1 mpirank: 0

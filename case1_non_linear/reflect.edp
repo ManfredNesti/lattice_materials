@@ -1,0 +1,113 @@
+load "msh3"
+load "tetgen"
+// load "mshmet"
+load "medit"
+load "ff-Ipopt"
+// load "freeyams"
+// load "mmg3d-v4.0"
+load "iovtk";
+load "MUMPS_seq"
+load "gmsh"
+verbosity = 0;
+
+int esempio = 2;
+
+if (esempio == 1) {
+	mesh Th1 = square(150, 150); // quadrato
+	mesh Th2 = square(60, 30, [2*x, y]); //rettangolo 2x1
+
+	fespace Vh1(Th1, P1);
+	fespace Vh2(Th2, P1);
+
+	Vh1 v1 = y <= x - 0.5; // densità sul quadrato
+	plot(v1, fill = 1, wait=1, cmm="v1");
+
+	Vh2 v2; // densità sul rettangolo
+
+	for(int i = 0; i < Th2.nt; i++){
+
+		for(int j = 0; j < 3; j++){
+
+			if(Th2[i][j].x <= 1){ //sono nella prima metà del rettangolo (ancora nel quadrato) -> ricopio i valori
+				v2[][Vh2(i,j)] = v1(Th2[i][j].x, Th2[i][j].y);
+			}
+			else{ // sono nella seconda metà del rettangolo -> rifletto i valori rispetto all'asse x = 1
+				v2[][Vh2(i,j)] = v1(2 - Th2[i][j].x, Th2[i][j].y);
+			}
+		}
+
+	}
+
+	plot(v2, fill = 1, wait=1, cmm="v2");
+}
+else if (esempio == 2)
+{
+	/// Micheletti
+	//ex1
+	mesh Th1 = square(20,20);         // top    right
+	fespace Vh1(Th1,P1);
+	Vh1 u1 = exp(-50*(y-x^2)^2);
+	plot(Th1,u1,fill=1,wait=1,cmm="u1");
+	mesh Th2 = movemesh(Th1,[-x, y]); // top    left
+	fespace Vh2(Th2,P1);
+	Vh2 u2;
+	u2[] = u1[];
+	plot(Th2,u2,fill=1,wait=1,cmm="u2");
+	mesh Th3 = movemesh(Th1,[-x,-y]); // bottom left
+	fespace Vh3(Th3,P1);
+	Vh3 u3 = u1;
+	u3[] = u1[];
+	plot(Th3,u3,fill=1,wait=1,cmm="u3");
+	mesh Th4 = movemesh(Th1,[ x,-y]); // bottom right
+	fespace Vh4(Th4,P1);
+	Vh4 u4 = u1;
+	u4[] = u1[];
+	plot(Th4,u4,fill=1,wait=1,cmm="u4");
+	mesh Th = Th1+Th2+Th3+Th4;        // 4x4 super-grid
+	fespace Vh(Th,P1);
+	Vh u = u1+u2+u3+u4;
+	plot(Th,u1,u2,u3,u4,fill=1,cmm="u", wait= 1);
+	plot(Th, u,fill = 1, cmm="u");
+} else
+{
+	//ex2
+	mesh Th1 = square(20,20);         // top right
+	fespace Vh1(Th1,P1);
+	Vh1 u1 = exp(-50*(y-x^2)^2), v1;
+	plot(Th1,u1,fill=1,wait=1,cmm="u1");
+	mesh Th2 = movemesh(Th1,[-x, y]); // top left
+	fespace Vh2(Th2,P1);
+	Vh2 u2;
+	u2[] = u1[];
+	Th1 = Th1 + Th2;                  // top left-right
+	u1 = u1 + u2 - u1*u2;
+	plot(Th1,u1,fill=1,wait=1,cmm="u1+u2");
+	mesh Th3 = movemesh(Th1,[ x,-y]); // bottom left-right
+	fespace Vh3(Th3,P1);
+	Vh3 u3;
+	u3[] = u1[];
+	plot(Th3,u3,fill=1,wait=1,cmm="u3+u4");
+	Th1 = Th1+Th3;        // 4x4 super-grid
+	u1 = u1*(y>=0) + u3*(y<0);
+	plot(Th1,u1,fill=1,cmm="u");
+}
+
+// Parameters
+func f = x*y*y; //right hand side
+fespace Vh(Th1,P1);
+Vh uh, vh;
+// Problem
+problem laplace (uh, vh)
+    = int2d(Th1)(
+        dx(uh)*dx(vh)
+        + dy(uh)*dy(vh)
+    )
+    + int2d(Th1)(
+        - f*vh
+    )
+    + on (1,2,3,4, uh = 0)
+    ;
+// Solve
+laplace;
+// Plot
+plot(uh, fill=1, wait=1, cmm="u1");

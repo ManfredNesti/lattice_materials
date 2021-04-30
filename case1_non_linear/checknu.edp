@@ -1,0 +1,107 @@
+//Construct a 2x2 material
+//compute nu on the structure obtained
+
+//cell mesh Th
+//cell density v
+plot(v,  wait = 1, fill = 1, cmm = "Final density in 1 cell");
+
+mesh Th2 = movemesh(Th,[-x, y]); // top left
+fespace Vh2(Th2,P1);
+Vh2 v2;
+v2[] = v[];
+Th = Th + Th2;                  // top left-right
+v = v + v2 - v*v2;
+plot(Th,v,fill=1,wait=1,cmm="u1+u2");
+mesh Th3 = movemesh(Th,[ x,-y]); // bottom left-right
+fespace Vh3(Th3,P1);
+Vh3 v3;
+v3[] = v[];
+plot(Th3,v3,fill=1,wait=1,cmm="u3+u4");
+Th = Th+Th3;        // 4x4 super-grid
+v = v*(y>=0) + v3*(y<0);
+plot(Th,v,fill=1,cmm="Final density in 2x2 material cells");
+
+//Compute nu Poisson coefficient to check our results
+//Solve primal problem
+problem primallinearized([varu1,varu2], [psi1, psi2]) =
+  int2d(Th) (v^q * L * (2.0*detF(u10,u20)-1.) * (dx(psi1)*F22(u10,u20) + dy(psi2)*F11(u10,u20) - dy(psi1)*F21(u10,u20) - dx(psi2)*F12(u10,u20))
+                                        * (invC11(u10,u20) * gradE11(u10,u20,varu1,varu2) + invC12(u10,u20) * gradE12(u10,u20,varu1,varu2)
+                                        +  invC21(u10,u20) * gradE21(u10,u20,varu1,varu2) + invC22(u10,u20) * gradE22(u10,u20,varu1,varu2))
+
+           + v^q * L * (detF(u10,u20)-1) * detF(u10,u20) * ( - D1111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
+                                                       - D1112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
+                                                       - D1121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
+                                                       - D1122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + invC11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2)
+                                                       - D1211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
+                                                       - D1212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
+                                                       - D1221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
+                                                       - D1222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + invC12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2)
+                                                       - D2111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
+                                                       - D2112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
+                                                       - D2121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
+                                                       - D2122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + invC21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2)
+                                                       - D2211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
+                                                       - D2212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
+                                                       - D2221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
+                                                       - D2222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + invC22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2)
+                                                   )
+
+            + v^q * 2.0*M* (gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + E11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2) +
+                            gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + E12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2) +
+                            gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + E21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2) +
+                            gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + E22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2) )
+           )
+
+    + int2d(Th) (v^q * L*detF(u10,u20)*(detF(u10,u20)-1.) * (invC11(u10,u20) * gradE11(u10,u20,psi1,psi2)
+                                                           + invC12(u10,u20) * gradE12(u10,u20,psi1,psi2)
+                                                           + invC21(u10,u20) * gradE21(u10,u20,psi1,psi2)
+                                                           + invC22(u10,u20) * gradE22(u10,u20,psi1,psi2))
+                + v^q * 2.0 * M * (E11(u10,u20) * gradE11(u10,u20,psi1,psi2)
+                                 + E12(u10,u20) * gradE12(u10,u20,psi1,psi2)
+                                 + E21(u10,u20) * gradE21(u10,u20,psi1,psi2)
+                                 + E22(u10,u20) * gradE22(u10,u20,psi1,psi2)))
+    + on(2,varu1=0) // Dirichlet
+    + on(1,varu2=0) // symmetric BC
+    + on(4,varu1=0) // symmetric BC
+  ;
+
+// Residual for Newton method
+func real errorL2()
+{
+ err1[] = u1[];
+ err1[] -= u10[];
+
+ real erru = int2d(Th)(err1^2 + err2^2);
+ real normu = int2d(Th)(u10^2 + u20^2);
+ // return error estimate (stopping criterion)
+ return sqrt(erru / (normu+1e-15));
+}
+
+// Newton initialization ?
+[u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+[u1, u2] = [u10, u20]; // u_1
+real tol = 1.e-12;
+real res = 2. * tol;
+int loopcount = 0;
+int loopmax = 100;
+real alpha = 1.0;
+
+// Iterations
+while (loopcount <= loopmax && res >= tol){
+    loopcount ++;
+    cout << "Newton iteration " << loopcount << endl;
+    // Solve
+    primallinearized;
+    // Update
+    u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u
+    // update error for the stopping criterion
+    res = errorL2();
+    //Update old solution
+    u10[] = u1[];
+}
+
+real d2 = int1d(Th,3)(u2);
+nu12 = - d2 / d1; // estimated nu
+
+cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
+cout << "*********************************************" << endl;
