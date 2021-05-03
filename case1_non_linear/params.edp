@@ -5,9 +5,19 @@
 // Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
 int[int] ffordervel = [1];
 
-// Mesh
+// Load and mesh
+int ld = 1;
+string path = "results_case1_non_linear/2021-05-03_12-23-51/";
+int idxld = 2;
+mesh Th;
 int n = 30;
-mesh Th = square(n, n, [x, y]);
+
+if(ld) {
+  Th = readmesh(path+"mesh_initial.msh");
+  plot(Th, wait=1, cmm="Loaded mesh");
+} else {
+  Th = square(n, n, [x, y]);
+}
 
 // Params
 real nu12;
@@ -32,6 +42,12 @@ Xhp v,     // density
     uz;     // density, filtered density, test density, params for IPOPT
 Xhp m11, m12, m22; // metric computation utilities
 
+if (ld) {
+  ifstream fu(path+idxld+"_density.txt");
+  fu >> v[];
+  plot(v, wait=1, fill=1, cmm="Loaded density");
+}
+
 // Displacement space
 fespace Vh(Th, [P1, P1]);
 Vh [u1,u2],       // displacement
@@ -49,7 +65,7 @@ real Volume = int2d(Th)(1.);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 40;
+int IPOPTmaxiter = 3;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
@@ -86,7 +102,7 @@ real radius = 1./80^2; // filtering radius
 int heav = 0;
 
 // Main params
-int maxit = 12;
+int maxit = 2;
 
 // Sigmund filtering
 int sig = 1;
