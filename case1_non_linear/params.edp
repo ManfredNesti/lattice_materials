@@ -27,7 +27,7 @@ real L = E*nu/(1-nu^2);
 real M = E/(2*(1+nu));
 real d1 = 0.3;        // u traction given
 real vf = 0.4;       // volume fraction
-real nutarget = -1.0; // nu target
+real nutarget = -1; // nu target
 
 // Density space
 fespace Xhp(Th,P1);
@@ -102,7 +102,11 @@ real radius = 1./80^2; // filtering radius
 int heav = 0;
 
 // Main params
+<<<<<<< HEAD
 int maxit = 2;
+=======
+int maxit = 1;
+>>>>>>> fcdf17398474b631f144e7120e87703970221334
 
 // Sigmund filtering
 int sig = 1;
