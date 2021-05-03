@@ -49,45 +49,45 @@ else
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem: with v2, on Th2?
 fespace Vh2(Th2, [P1, P1]);
-Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi221, psi222], [err21,err22];
+Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
 
-problem primallinearized([varu21,varu22], [psi221, psi222]) =
-  int2d(Th2) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi221)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi221)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
+problem primallinearized([varu21,varu22], [psi21, psi22]) =
+  int2d(Th2) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi21)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi21)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
                                         * (invC11(u210,u220) * gradE11(u210,u220,varu21,varu22) + invC12(u210,u220) * gradE12(u210,u220,varu21,varu22)
                                         +  invC21(u210,u220) * gradE21(u210,u220,varu21,varu22) + invC22(u210,u220) * gradE22(u210,u220,varu21,varu22))
 
-           + v2^q * L * (detF(u210,u220)-1) * detF(u210,u220) * ( - D1111(u210,u220) * gradE11(u210,u220,psi221,psi22) * gradE11(u210,u220,varu21,varu22)
-                                                       - D1112(u210,u220) * gradE12(u210,u220,psi221,psi22) * gradE11(u210,u220,varu21,varu22)
-                                                       - D1121(u210,u220) * gradE21(u210,u220,psi221,psi22) * gradE11(u210,u220,varu21,varu22)
-                                                       - D1122(u210,u220) * gradE22(u210,u220,psi221,psi22) * gradE11(u210,u220,varu21,varu22) + invC11(u210,u220) * grad2E11(psi221,psi22,varu21,varu22)
-                                                       - D1211(u210,u220) * gradE11(u210,u220,psi221,psi22) * gradE12(u210,u220,varu21,varu22)
-                                                       - D1212(u210,u220) * gradE12(u210,u220,psi221,psi22) * gradE12(u210,u220,varu21,varu22)
-                                                       - D1221(u210,u220) * gradE21(u210,u220,psi221,psi22) * gradE12(u210,u220,varu21,varu22)
-                                                       - D1222(u210,u220) * gradE22(u210,u220,psi221,psi22) * gradE12(u210,u220,varu21,varu22) + invC12(u210,u220) * grad2E12(psi221,psi22,varu21,varu22)
-                                                       - D2111(u210,u220) * gradE11(u210,u220,psi221,psi22) * gradE21(u210,u220,varu21,varu22)
-                                                       - D2112(u210,u220) * gradE12(u210,u220,psi221,psi22) * gradE21(u210,u220,varu21,varu22)
-                                                       - D2121(u210,u220) * gradE21(u210,u220,psi221,psi22) * gradE21(u210,u220,varu21,varu22)
-                                                       - D2122(u210,u220) * gradE22(u210,u220,psi221,psi22) * gradE21(u210,u220,varu21,varu22) + invC21(u210,u220) * grad2E21(psi221,psi22,varu21,varu22)
-                                                       - D2211(u210,u220) * gradE11(u210,u220,psi221,psi22) * gradE22(u210,u220,varu21,varu22)
-                                                       - D2212(u210,u220) * gradE12(u210,u220,psi221,psi22) * gradE22(u210,u220,varu21,varu22)
-                                                       - D2221(u210,u220) * gradE21(u210,u220,psi221,psi22) * gradE22(u210,u220,varu21,varu22)
-                                                       - D2222(u210,u220) * gradE22(u210,u220,psi221,psi22) * gradE22(u210,u220,varu21,varu22) + invC22(u210,u220) * grad2E22(psi221,psi22,varu21,varu22)
+           + v2^q * L * (detF(u210,u220)-1) * detF(u210,u220) * ( - D1111(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
+                                                       - D1112(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
+                                                       - D1121(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
+                                                       - D1122(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22) + invC11(u210,u220) * grad2E11(psi21,psi22,varu21,varu22)
+                                                       - D1211(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
+                                                       - D1212(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
+                                                       - D1221(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
+                                                       - D1222(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22) + invC12(u210,u220) * grad2E12(psi21,psi22,varu21,varu22)
+                                                       - D2111(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
+                                                       - D2112(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
+                                                       - D2121(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
+                                                       - D2122(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22) + invC21(u210,u220) * grad2E21(psi21,psi22,varu21,varu22)
+                                                       - D2211(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
+                                                       - D2212(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
+                                                       - D2221(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
+                                                       - D2222(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + invC22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22)
                                                    )
 
-            + v2^q * 2.0*M* (gradE11(u210,u220,psi221,psi22) * gradE11(u210,u220,varu21,varu22) + E11(u210,u220) * grad2E11(psi221,psi22,varu21,varu22) +
-                            gradE12(u210,u220,psi221,psi22) * gradE12(u210,u220,varu21,varu22) + E12(u210,u220) * grad2E12(psi221,psi22,varu21,varu22) +
-                            gradE21(u210,u220,psi221,psi22) * gradE21(u210,u220,varu21,varu22) + E21(u210,u220) * grad2E21(psi221,psi22,varu21,varu22) +
-                            gradE22(u210,u220,psi221,psi22) * gradE22(u210,u220,varu21,varu22) + E22(u210,u220) * grad2E22(psi221,psi22,varu21,varu22) )
+            + v2^q * 2.0*M* (gradE11(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22) + E11(u210,u220) * grad2E11(psi21,psi22,varu21,varu22) +
+                            gradE12(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22) + E12(u210,u220) * grad2E12(psi21,psi22,varu21,varu22) +
+                            gradE21(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22) + E21(u210,u220) * grad2E21(psi21,psi22,varu21,varu22) +
+                            gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + E22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22) )
            )
 
-    + int2d(Th2) (v2^q * L*detF(u210,u220)*(detF(u210,u220)-1.) * (invC11(u210,u220) * gradE11(u210,u220,psi221,psi22)
-                                                           + invC12(u210,u220) * gradE12(u210,u220,psi221,psi22)
-                                                           + invC21(u210,u220) * gradE21(u210,u220,psi221,psi22)
-                                                           + invC22(u210,u220) * gradE22(u210,u220,psi221,psi22))
-                + v2^q * 2.0 * M * (E11(u210,u220) * gradE11(u210,u220,psi221,psi22)
-                                 + E12(u210,u220) * gradE12(u210,u220,psi221,psi22)
-                                 + E21(u210,u220) * gradE21(u210,u220,psi221,psi22)
-                                 + E22(u210,u220) * gradE22(u210,u220,psi221,psi22)))
+    + int2d(Th2) (v2^q * L*detF(u210,u220)*(detF(u210,u220)-1.) * (invC11(u210,u220) * gradE11(u210,u220,psi21,psi22)
+                                                           + invC12(u210,u220) * gradE12(u210,u220,psi21,psi22)
+                                                           + invC21(u210,u220) * gradE21(u210,u220,psi21,psi22)
+                                                           + invC22(u210,u220) * gradE22(u210,u220,psi21,psi22))
+                + v2^q * 2.0 * M * (E11(u210,u220) * gradE11(u210,u220,psi21,psi22)
+                                 + E12(u210,u220) * gradE12(u210,u220,psi21,psi22)
+                                 + E21(u210,u220) * gradE21(u210,u220,psi21,psi22)
+                                 + E22(u210,u220) * gradE22(u210,u220,psi21,psi22)))
     + on(2,varu21=0) // Dirichlet
     + on(1,varu22=0) // symmetric BC
     + on(4,varu21=0) // symmetric BC
