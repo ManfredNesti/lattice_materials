@@ -26,6 +26,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
 	else q = qmax;
 
+
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
 	  lb  = xlb[], ub  = xub[],
    	  clb = clb  , cub = cub  ,
@@ -37,13 +38,13 @@ while(stopmesh > tolmesh && ii < maxit){
       //,maxiter=10);
 	  );
 
-  // Helmholtz filtering
-	if(helm){
-  	helmholtz;
-  	plot(v,  wait = 1, fill = 1, cmm = "Density per-Helmholtz");
-  	plot(vHelm, wait = 1, fill = 1, cmm = "Density post-Helmholtz");
-  	v = vHelm;
-	}
+		// Helmholtz filtering
+		if(helm){
+			helmholtz;
+			plot(v,  wait = 1, fill = 1, cmm = "Density per-Helmholtz");
+			plot(vHelm, wait = 1, fill = 1, cmm = "Density post-Helmholtz");
+			v = vHelm;
+		}
 
 	// Mesh adaptivity
   if(meshad){
@@ -75,7 +76,7 @@ while(stopmesh > tolmesh && ii < maxit){
 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
 			plot(vSig, wait = 1, fill = 1, cmm = "Density post-Sigmund");
 			v = vSig;
-			beta += 1;
+			if(beta <= 6) beta += 1;
 			//eta += 0.02;
 		}
 	}
