@@ -7,45 +7,44 @@ plot(v,  wait = 1, fill = 1, cmm = "Final density in 1 cell");
 
 int firstTry = 0;
 mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1]); // [-1,1]^2 //HOW TO CHOOSE FROM WHAT Th2 START?
+fespace Xh2(Th2, P1);
+Xh2 v2; // densità su Th2
 
-if (firstTry)
-{
-  mesh Th2 = movemesh(Th,[-x, y]); // top left
-  fespace Vh2(Th2,P1);
-  Vh2 v2;
-  v2[] = v[];
-  Th = Th + Th2;                  // top left-right
-  v = v + v2 - v*v2;
-  plot(Th,v,fill=1,wait=1,cmm="u1+u2");
-  mesh Th3 = movemesh(Th,[ x,-y]); // bottom left-right
-  fespace Vh3(Th3,P1);
-  Vh3 v3;
-  v3[] = v[];
-  plot(Th3,v3,fill=1,wait=1,cmm="u3+u4");
-  Th = Th+Th3;        // 4x4 super-grid
-  v = v*(y>=0) + v3*(y<0);
-  plot(Th,v,fill=1,cmm="Final density in 2x2 material cells");
-}
-else
-{
-  mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1]); // [-1,1]^2 //HOW TO CHOOSE FROM WHAT Th2 START?
-  fespace Vh2(Th2, P1);
-  Vh2 v2; // densità su Th2
+// if (firstTry)
+// {
+//   mesh Th2 = movemesh(Th,[-x, y]); // top left
+//   fespace Vh2(Th2,P1);
+//   Vh2 v2;
+//   v2[] = v[];
+//   Th = Th + Th2;                  // top left-right
+//   v = v + v2 - v*v2;
+//   plot(Th,v,fill=1,wait=1,cmm="u1+u2");
+//   mesh Th3 = movemesh(Th,[ x,-y]); // bottom left-right
+//   fespace Vh3(Th3,P1);
+//   Vh3 v3;
+//   v3[] = v[];
+//   plot(Th3,v3,fill=1,wait=1,cmm="u3+u4");
+//   Th = Th+Th3;        // 4x4 super-grid
+//   v = v*(y>=0) + v3*(y<0);
+//   plot(Th,v,fill=1,cmm="Final density in 2x2 material cells");
+// }
+// else
+// {
   for(int i = 0; i < Th2.nt; i++)
     for(int j = 0; j < 3; j++)
-      if      (Th2[i][j].x >= 0 & Th2[i][j].y >= 0) v2[][Vh2(i,j)] = v( Th2[i][j].x, Th2[i][j].y);
-      else if (Th2[i][j].x <  0 & Th2[i][j].y >= 0) v2[][Vh2(i,j)] = v(-Th2[i][j].x, Th2[i][j].y);
-      else if (Th2[i][j].x <  0 & Th2[i][j].y <  0) v2[][Vh2(i,j)] = v(-Th2[i][j].x,-Th2[i][j].y);
-      else                                          v2[][Vh2(i,j)] = v( Th2[i][j].x,-Th2[i][j].y);
+      if      (Th2[i][j].x >= 0 & Th2[i][j].y >= 0) v2[][Xh2(i,j)] = v( Th2[i][j].x, Th2[i][j].y);
+      else if (Th2[i][j].x <  0 & Th2[i][j].y >= 0) v2[][Xh2(i,j)] = v(-Th2[i][j].x, Th2[i][j].y);
+      else if (Th2[i][j].x <  0 & Th2[i][j].y <  0) v2[][Xh2(i,j)] = v(-Th2[i][j].x,-Th2[i][j].y);
+      else                                          v2[][Xh2(i,j)] = v( Th2[i][j].x,-Th2[i][j].y);
   plot(v2, fill = 1,  wait = 1);
   // traslo nel primo quadrante: così Th2 da [-1,1]^2 diventa la nuova "unit cell" [0,2]^2
-  Vh2 u2x =1, u2y = 1;
+  Xh2 u2x =1, u2y = 1;
   real [int] v2old = v2[];
   Th2 = movemesh(Th2,[x+u2x,y+u2y]);
   v2 = v2;
   v2[] = v2old;
   plot(v2, fill = 1,cmm = "v2 dopo shift",  wait = 1);
-}
+//}
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem: with v2, on Th2?
 fespace Vh2(Th2, [P1, P1]);
