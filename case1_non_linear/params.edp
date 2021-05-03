@@ -79,8 +79,8 @@ real q = 3.;
 real qmax = 3.;
 
 // Helmholtz filtering
-int helm = 0;
-real radius = 1./50^2; // filtering radius
+int helm = 1;
+real radius = 1./80^2; // filtering radius
 
 // Heaviside filtering
 int heav = 0;
@@ -94,7 +94,7 @@ int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e
 real betamax = 1.5;
 real betamin = 1e-3;
 // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
-real beta = 3.5;
+real beta = 2;
 real eta = 0.45;
 
 // Mesh adaptivity
