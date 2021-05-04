@@ -86,7 +86,7 @@ real radius = 1./80^2; // filtering radius
 int heav = 0;
 
 // Main params
-int maxit = 1;
+int maxit = 2;
 
 // Sigmund filtering
 int sig = 1;
