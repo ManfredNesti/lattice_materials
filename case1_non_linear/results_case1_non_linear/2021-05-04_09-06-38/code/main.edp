@@ -118,4 +118,4 @@ cout << Th.nt << endl;
 
 plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/final_density.ps", cmm = "Final Density");
 
-include "checknu.edp";
+// include "checknu.edp";

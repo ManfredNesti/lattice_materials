@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Load and mesh
-int ld = 0;
+int ld = 1;
 string path = "results_case1_non_linear/2021-05-03_12-23-51/";
 int idxld = 2;
 mesh Th;
