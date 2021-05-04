@@ -1,7 +1,0 @@
-mesh Th = readmesh("mesh_initial.msh");
-Vh v;
-{
-ifstream fu("0_density.txt");
-fu >> v[];
-plot(v);
-}
