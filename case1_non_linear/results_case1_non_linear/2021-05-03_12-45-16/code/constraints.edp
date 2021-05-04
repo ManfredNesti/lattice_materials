@@ -1,0 +1,42 @@
+// ***************************************************************************
+// Constraints
+// ***************************************************************************
+// Volume fraction
+func real C(real[int] & v)
+{
+  Xhp w;
+  w[] = v;
+
+  real fraction = int2d(Th)(w);
+
+  return fraction;
+}
+
+func real[int] ipC(real[int] & v)
+{
+  real[int] cc = [C(v)];
+  return cc;
+}
+
+// Gradient
+func real[int] dC(real[int] & v)
+{
+  Xhp w;
+  w[] = v;
+
+  varf dc(u,uu)   = int2d(Th)(uu);
+
+  real [int] jacC = dc(0,Xhp);
+  return jacC;
+}
+
+matrix mdC;
+
+func matrix ipGradC(real[int] & v)
+{
+  real[int,int] dc(1,Xhp.ndof);
+  dc(0,:) = dC(v);
+
+  mdC = dc;
+  return mdC;
+}

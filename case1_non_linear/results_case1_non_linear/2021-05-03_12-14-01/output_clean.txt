@@ -1,0 +1,103 @@
+   22 : savemesh (Th, "results_case1_non_linear/mesh_initial.msh" );
+   23 : while(stopmesh > tolmesh && ii < maxit){
+   24 : 
+   25 : 	jj = 0;
+   26 : 
+   27 : 	// Power penalty law
+   28 : 	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
+   29 : 	else q = qmax;
+   30 : 
+   31 : 
+   32 : 	IPOPT(J, gradJ, ipC, ipGradC, v[],
+   33 : 	  lb  = xlb[], ub  = xub[],
+   34 :    	  clb = clb  , cub = cub  ,
+   35 : 	  checkindex = 1, structjacc = [gvi,gvj],
+   36 :       maxiter = IPOPTmaxiter, warmstart = ii,
+   37 : 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
+   38 : 	  //printlevel = 1,
+   39 : 	  //derivativetest="first-order");
+   40 :       //,maxiter=10);
+   41 : 	  );
+   42 : 
+   43 : 		// Helmholtz filtering
+   44 : 		if(helm){
+   45 : 			helmholtz;
+   46 : 			plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelmii.ps", cmm = "Density preHelm"+ii);
+   47 : 			plot(vHelm, wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelmii.ps", cmm = "Density postHelm"+ii);
+   48 : 			v = vHelm;
+   49 : 		}
+   50 : 
+   51 : 	// Mesh adaptivity
+   52 :   if(meshad){
+   53 :     maxsK = 1;
+   54 :     ntold = Th.nt;
+   55 :     makemetrica(tau);
+   56 :   	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+   57 : 		savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
+   58 :   	plot(Th, wait = 1, cmm="New mesh");
+   59 :   	cout << "maxsK = " << maxsK << endl;
+   60 :   }
+   61 : 
+   62 : 	// Heaviside filtering
+   63 : 	if(heav){
+   64 :     plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preHeavii.ps", cmm = "Density preHeav"+ii);
+   65 : 		real betaH = 10*(ii < 19) + 7*(ii == 19);
+   66 : 		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
+   67 :     plot(vHeav, wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postHeavii.ps", cmm = "Density postHeav"+ii);
+   68 :     v = vHeav;
+   69 : 	}
+   70 : 
+   71 : 	// Sigmund filtering
+   72 : 	if(sig){
+   73 : 		if(ii != maxit - 1 ){
+   74 : 			// beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
+   75 : 			// beta = betamax - (betamax - betamin) * exp(- ii / 2); //se vogliamo incrementare più "soft"
+   76 : 			// eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+   77 : 			plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preSigii.ps", cmm = "Density preSig"+ii);
+   78 : 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
+   79 : 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+   80 : 			plot(vSig, wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postSigii.ps", cmm = "Density postSig"+ii);
+   81 : 			v = vSig;
+   82 : 			if(beta <= 6) beta += 1;
+   83 : 			//eta += 0.02;
+   84 : 		}
+   85 : 	}
+   86 : 
+   87 :   // Mesh projection (only for mesh adaptivity)
+   88 :   if(meshad){
+   89 :   	v = v;
+   90 :   	xlb = xlb;
+   91 :   	xub = xub;
+   92 :   	gvi = gvi;
+   93 :   	gvj = 0:Xhp.ndof-1;
+   94 :   	lz = lz;
+   95 :   	uz = uz;
+   96 :   	m11 = m11;
+   97 :   	m12 = m12;
+   98 :   	m22 = m22;
+   99 : 
+  100 :   	stopmesh = abs(Th.nt - real(ntold))/ntold;
+  101 :   }
+  102 : 
+  103 : 	ii += 1;
+  104 : 
+  105 : 	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
+  106 : 
+  107 : 	{
+  108 : 	ofstream fout(ii+"_density.txt");
+  109 : 	fout < v[]; error operator <  <PPSo>, <P2KNIdE> 
+ List of choices 
+	 (	  <b> :   <l>, <l> )
+	 (	  <b> :   <10GlgElementIN5Fem2D5Mesh3EE>, <10GlgElementIN5Fem2D5Mesh3EE> )
+	 (	  <b> :   <N12_GLOBAL__N_19lgElementE>, <N12_GLOBAL__N_19lgElementE> )
+	 (	  <b> :   <NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE>, <NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE> )
+	 (	  <b> :   <d>, <d> )
+
+ Error line number 109, in file main.edp, before  token ;
+
+  current line = 109
+Compile error : 
+	line number :109, ;
+error Compile error : 
+	line number :109, ;
+ code = 1 mpirank: 0

@@ -1,0 +1,222 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+    1 : load "ff-Ipopt";
+    2 : load "ffrandom";
+    3 : load "iovtk" load: iovtk 
+;
+    4 : 
+    5 : int ii = 0;
+    6 : int jj = 0;
+    7 : 
+    8 : include "macros.edp"// ***************************************************************************
+    2 : // Macros
+    3 : // ***************************************************************************
+    4 : // Gradient of a vector field (u1, u2)
+    5 : macro grad11(u1, u2) (dx(u1))  )   (dx(u1)) //
+    6 : macro grad12(u1, u2) (dy(u1))  )   (dy(u1)) //
+    7 : macro grad21(u1, u2) (dx(u2))  )   (dx(u2)) //
+    8 : macro grad22(u1, u2) (dy(u2))  )   (dy(u2)) //
+    9 : // Deformation gradient F
+   10 : macro F11(u1,u2) (1.0 + grad11(u1,u2))  )   (1.0 + grad11(u1,u2)) //
+   11 : macro F12(u1,u2) (0.0 + grad12(u1,u2))  )   (0.0 + grad12(u1,u2)) //
+   12 : macro F21(u1,u2) (0.0 + grad21(u1,u2))  )   (0.0 + grad21(u1,u2)) //
+   13 : macro F22(u1,u2) (1.0 + grad22(u1,u2))  )   (1.0 + grad22(u1,u2)) //
+   14 : // Components Green-Lagrange strain tensor E
+   15 : macro E11(u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
+   16 : macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+   17 : macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+   18 : macro E22(u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2))  )   0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
+   19 : // Trace of Green-Lagrange tensor
+   20 : macro traceE(u1,u2)	(E11(u1,u2) + E22(u1,u2))
+   21 #  )  	(E11(u1,u2) + E22(u1,u2))
+   22 : // J: determinant of F
+   23 : macro detF(u1,u2) (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )
+   24 #  )   (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )
+   25 : //Right Cauchy-Green deformation tensor C
+   26 : macro C11(u1,u2) (2*E11(u1,u2) + 1.0)  )   (2*E11(u1,u2) + 1.0) //
+   27 : macro C12(u1,u2) (2*E12(u1,u2))  )   (2*E12(u1,u2)) //
+   28 : macro C21(u1,u2) (2*E21(u1,u2))  )   (2*E21(u1,u2)) //
+   29 : macro C22(u1,u2) (2*E22(u1,u2) + 1.0)  )   (2*E22(u1,u2) + 1.0) //
+   30 : // determinantof C
+   31 : macro detC(u1,u2) (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2))
+   32 #  )   (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2))
+   33 : //Inverse of C: C^-1 (symmetric)
+   34 : macro invC11(u1,u2) (1/detC(u1,u2) * (C22(u1,u2)))  )   (1/detC(u1,u2) * (C22(u1,u2))) //
+   35 : macro invC12(u1,u2) (1/detC(u1,u2) * ((-1)* C12(u1,u2)))  )   (1/detC(u1,u2) * ((-1)* C12(u1,u2))) //
+   36 : macro invC21(u1,u2) (1/detC(u1,u2) * ((-1)* C21(u1,u2)))  )   (1/detC(u1,u2) * ((-1)* C21(u1,u2))) //
+   37 : macro invC22(u1,u2) (1/detC(u1,u2) * (C11(u1,u2)))  )   (1/detC(u1,u2) * (C11(u1,u2))) //
+   38 : // Second Piola-Kirchhoff stress tensor for Phi4 Sij forse non serve ...
+   39 : // Dijkl = - d(Cij^-1)/dEkl
+   40 : macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2 )  )   (invC11(u1,u2)*invC11(u1,u2) * 2 ) //
+   41 : macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 )  )   (invC11(u1,u2)*invC21(u1,u2) * 2 ) // = D1121, D1112, D2111 for symmetry of C,invC and E
+   42 : macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 )  )   (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
+   43 : macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 )  )   (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
+   44 : macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 )  )   (invC11(u1,u2)*invC21(u1,u2) * 2 ) //
+   45 : macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2 )  )   (invC12(u1,u2)*invC12(u1,u2) * 2 ) // = D2211
+   46 : macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2 )  )   (invC21(u1,u2)*invC21(u1,u2) * 2 ) //
+   47 : macro D1212(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) // = D2121, D1221, D2112
+   48 : macro D2121(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   49 : macro D1221(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   50 : macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   51 : macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 )  )   (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
+   52 : macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 )  )   (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+   53 : macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 )  )   (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+   54 : macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 )  )   (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
+   55 : macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 )  )   (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
+   56 : //dEij(u1,u2)/du * lambda
+   57 : macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2))  )   (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
+   58 : macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) ) )   (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
+   59 : macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )   )   (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
+   60 : macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2))  )   (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2)) //
+   61 : //d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (test function)
+   62 : macro grad2E11 (phi1,phi2,l1,l2) (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2))  )   (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2)) //
+   63 : macro grad2E12 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2)))  )   (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+   64 : macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2)))  )   (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+   65 : macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2))  )   (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
+   66 : 
+    9 : include "params.edp"// ***************************************************************************
+    2 : // Params
+    3 : // ***************************************************************************
+    4 : 
+    5 : // Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
+    6 : int[int] ffordervel = [1];
+    7 : 
+    8 : // Load
+    9 : int ld = 1;
+   10 : string path = "results_case1_non_linear/2021-05-03_12-23-51/";
+   11 : int idxld = 0;
+   12 : mesh Th;
+   13 : 
+   14 : if (ld) {
+   15 :   mesh Th = readmesh(path+"mesh_initial.msh");
+   16 :   plot(Th, wait=1, cmm="Loaded mesh");
+   17 : } else {
+   18 :   int n = 30;
+   19 :   mesh Th = square(n, n, [x, y]);
+   20 : }
+   21 : 
+   22 : // Params
+   23 : real nu12;
+   24 : real nu = 0.3;
+   25 : real E = 1.;
+   26 : real L = E*nu/(1-nu^2);
+   27 : real M = E/(2*(1+nu));
+   28 : real d1 = 0.3;        // u traction given
+   29 : real vf = 0.4;       // volume fraction
+   30 : real nutarget = -1.0; // nu target
+   31 : 
+   32 : // Density space
+   33 : fespace Xhp(Th,P1);
+   34 : // fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
+   35 : Xhp v,     // density
+   36 :     vHelm, // Helmholtz filtered density
+   37 :     vHeav, // Heaviside filtered density
+   38 :     vSig,   // Sigmund tanh filtered density
+   39 :     wSig,  // Sigmund tanh filtered density (internal)
+   40 :     psi,
+   41 :     lz,
+   42 :     uz;     // density, filtered density, test density, params for IPOPT
+   43 : Xhp m11, m12, m22; // metric computation utilities
+   44 : 
+   45 : if (ld) {
+   46 :   ifstream fu(path+idxld+"_density.txt");
+   47 :   fu >> v[];
+   48 :   plot(v, wait=1, fill=1, cmm="Loaded density");
+   49 : }
+   50 : 
+   51 : // Displacement space
+   52 : fespace Vh(Th, [P1, P1]);
+   53 : Vh [u1,u2],       // displacement
+   54 :    [u10,u20] = [d1*x,0],     // old displacement (for Newton)
+   55 :    [psi1,psi2],   // test displacement
+   56 :    [varu1,varu2], // displacement increments (for Newton)
+   57 :    [err1,err2],   // errors (for Newton)
+   58 :    [l1, l2],      // lambda
+   59 :    [phi1, phi2];  // test lambda
+   60 : // Area space
+   61 : fespace Xh0(Th, P0); // periodic = [[2,y],[4,y],[1,x],[3,x]]);
+   62 : Xh0 vol = area;
+   63 : real Volume = int2d(Th)(1.);
+   64 : 
+   65 : 
+   66 : // IPOPT params
+   67 : real [int] lm(1);
+   68 : int IPOPTmaxiter = 3;
+   69 : int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
+   70 : gvi = 0;
+   71 : Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
+   72 : real tolv = 0.;
+   73 : real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
+   74 : real IPOPTtol = 1e-3;
+   75 : 
+   76 : // Inital density
+   77 : int rnd = 0;
+   78 : int seed = 10;
+   79 : if (rnd) {
+   80 :   srandom(seed);
+   81 :   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
+   82 : } else {
+   83 :   // v = 0.5;
+   84 :   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
+   85 :   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
+   86 :   // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
+   87 :   v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+   88 :   // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
+   89 : }
+   90 : plot(v, fill = 1, cmm="Initial density", wait=0);
+   91 : 
+   92 : // Power penalty
+   93 : int pen = 0;
+   94 : real q = 3.;
+   95 : real qmax = 3.;
+   96 : 
+   97 : // Helmholtz filtering
+   98 : int helm = 1;
+   99 : real radius = 1./80^2; // filtering radius
+  100 : 
+  101 : // Heaviside filtering
+  102 : int heav = 0;
+  103 : 
+  104 : // Main params
+  105 : int maxit = 2;
+  106 : 
+  107 : // Sigmund filtering
+  108 : int sig = 1;
+  109 : int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
+  110 : real betamax = 1.5;
+  111 : real betamin = 1e-3;
+  112 : // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
+  113 : real beta = 2;
+  114 : real eta = 0.45;
+  115 : 
+  116 : // Mesh adaptivity
+  117 : int meshad = 0;
+  118 : real tolmesh = 0.0001;
+  119 : real stopmesh = tolmesh + 1.;
+  120 : real tau = .00001;
+  121 : real maxsK;
+  122 : int ntold = Th.nt;
+  123 : ;
+   10 : include "print_params.edp"// ***************************************************************************
+    2 : // Print params
+    3 : // ***************************************************************************
+    4 : cout << endl << endl;
+    5 : 
+    6 : cout << "*********************************************" << endl;
+    7 : cout << "case1_non_linear.edp - Params" << endl;
+    8 : cout << "*********************************************" << endl;
+    9 : cout << "Loaded: " << ld << endl;
+   10 : if(ld) {
+   11 :   cout << "Loaded path: " << path << endl;
+   12 :   cout << "Loaded idx: " << idxld << endl;
+   13 : } else {
+   14 :   cout << "Mesh size: " << n The Identifier n does not exist 
+
+ Error line number 14, in file print_params.edp, before  token n
+
+  current line = 14
+Compile error : 
+	line number :14, n
+error Compile error : 
+	line number :14, n
+ code = 1 mpirank: 0

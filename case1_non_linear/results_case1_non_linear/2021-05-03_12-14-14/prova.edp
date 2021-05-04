@@ -1,0 +1,9 @@
+mesh Th = readmesh("mesh_initial.msh");
+plot(Th, wait=1);
+fespace Vh(Th,P1);
+Vh v;
+{
+ifstream fu("2_density.txt");
+fu >> v[];
+plot(v);
+}
