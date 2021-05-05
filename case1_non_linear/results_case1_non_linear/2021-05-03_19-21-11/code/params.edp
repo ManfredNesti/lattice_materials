@@ -7,8 +7,8 @@ int[int] ffordervel = [1];
 
 // Load and mesh
 int ld = 0;
-string path = "results_case1_non_linear/2021-05-05_09-51-28/";
-int idxld = 3;
+string path = "results_case1_non_linear/2021-05-03_12-23-51/";
+int idxld = 2;
 mesh Th;
 int n = 30;
 
@@ -42,6 +42,12 @@ Xhp v,     // density
     uz;     // density, filtered density, test density, params for IPOPT
 Xhp m11, m12, m22; // metric computation utilities
 
+if (ld) {
+  ifstream fu(path+idxld+"_density.txt");
+  fu >> v[];
+  plot(v, wait=1, fill=1, cmm="Loaded density");
+}
+
 // Displacement space
 fespace Vh(Th, [P1, P1]);
 Vh [u1,u2],       // displacement
@@ -56,9 +62,10 @@ fespace Xh0(Th, P0); // periodic = [[2,y],[4,y],[1,x],[3,x]]);
 Xh0 vol = area;
 real Volume = int2d(Th)(1.);
 
+
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 150;
+int IPOPTmaxiter = 3;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
@@ -69,23 +76,18 @@ real IPOPTtol = 1e-3;
 // Inital density
 int rnd = 0;
 int seed = 10;
-if (ld) {
-  ifstream fu(path+idxld+"_density.txt");
-  fu >> v[];
-  plot(v, wait=1, fill=1, cmm="Loaded density");
-} else if (rnd) {
+if (rnd) {
   srandom(seed);
   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
-  plot(v, fill = 1, cmm="Initial density", wait=0);
 } else {
   // v = 0.5;
   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
   // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
-  // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
   v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
-  plot(v, fill = 1, cmm="Initial density", wait=0);
+  // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
 }
+plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // Power penalty
 int pen = 0;
@@ -93,14 +95,14 @@ real q = 3.;
 real qmax = 3.;
 
 // Helmholtz filtering
-int helm = 0;
+int helm = 1;
 real radius = 1./80^2; // filtering radius
 
 // Heaviside filtering
 int heav = 0;
 
 // Main params
-int maxit = 6;
+int maxit = 2;
 
 // Sigmund filtering
 int sig = 1;
@@ -108,7 +110,7 @@ int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e
 real betamax = 1.5;
 real betamin = 1e-3;
 // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
-real beta = 3;
+real beta = 2;
 real eta = 0.45;
 
 // Mesh adaptivity

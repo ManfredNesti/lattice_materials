@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Load and mesh
-int ld = 0;
+int ld = 1;
 string path = "results_case1_non_linear/2021-05-05_09-51-28/";
 int idxld = 3;
 mesh Th;
@@ -108,7 +108,7 @@ int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e
 real betamax = 1.5;
 real betamin = 1e-3;
 // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
-real beta = 3;
+real beta = 2;
 real eta = 0.45;
 
 // Mesh adaptivity

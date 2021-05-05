@@ -7,8 +7,8 @@ int[int] ffordervel = [1];
 
 // Load and mesh
 int ld = 0;
-string path = "results_case1_non_linear/2021-05-05_09-51-28/";
-int idxld = 3;
+string path = "results_case1_non_linear/2021-05-03_12-23-51/";
+int idxld = 2;
 mesh Th;
 int n = 30;
 
@@ -93,7 +93,7 @@ real q = 3.;
 real qmax = 3.;
 
 // Helmholtz filtering
-int helm = 0;
+int helm = 1;
 real radius = 1./80^2; // filtering radius
 
 // Heaviside filtering
@@ -108,7 +108,7 @@ int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e
 real betamax = 1.5;
 real betamin = 1e-3;
 // real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
-real beta = 3;
+real beta = 2;
 real eta = 0.45;
 
 // Mesh adaptivity

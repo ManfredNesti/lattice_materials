@@ -2,7 +2,7 @@ load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
 
-int ii = 0;
+int ii = 100;
 int jj = 0;
 
 include "macros.edp"

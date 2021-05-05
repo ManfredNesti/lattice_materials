@@ -43,8 +43,8 @@ while(stopmesh > tolmesh && ii < maxit){
 		// Helmholtz filtering
 		if(helm){
 			helmholtz;
-			plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
-			plot(vHelm, wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+			plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+			plot(vHelm, wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
 			v = vHelm;
 		}
 
@@ -55,16 +55,16 @@ while(stopmesh > tolmesh && ii < maxit){
     makemetrica(tau);
   	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
 		savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
-  	plot(Th, wait = 0, cmm="New mesh");
+  	plot(Th, wait = 1, cmm="New mesh");
   	cout << "maxsK = " << maxsK << endl;
   }
 
 	// Heaviside filtering
 	if(heav){
-    plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
+    plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
 		real betaH = 10*(ii < 19) + 7*(ii == 19);
 		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
-    plot(vHeav, wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
+    plot(vHeav, wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
     v = vHeav;
 	}
 
@@ -74,10 +74,10 @@ while(stopmesh > tolmesh && ii < maxit){
 			// beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
 			// beta = betamax - (betamax - betamin) * exp(- ii / 2); //se vogliamo incrementare più "soft"
 			// eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
-			plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
+			plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-			plot(vSig, wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
+			plot(vSig, wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
 			v = vSig;
 			if(beta <= 6) beta += 1;
 			//eta += 0.02;
@@ -108,7 +108,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	ofstream fout("results_case1_non_linear/"+ii+"_density.txt");
 	fout << v[];
 	}
-	plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/"+ii+"_density.ps", cmm = "Density "+ii);
+	plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/"+ii+"_density.ps", cmm = "Density "+ii);
 	savevtk("results_case1_non_linear/"+ii+"_density.vtk", Th, v, dataname="Density", order=ffordervel);
 
 	outnu << nu12 << endl;
@@ -116,6 +116,6 @@ while(stopmesh > tolmesh && ii < maxit){
 
 cout << Th.nt << endl;
 
-plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/final_density.ps", cmm = "Final Density");
+plot(v,  wait = 1, fill = 1, ps = "results_case1_non_linear/final_density.ps", cmm = "Final Density");
 
-include "checknu.edp";
+// include "checknu.edp";
