@@ -1,6 +1,0 @@
-// ***************************************************************************
-// Helmholtz filter
-// ***************************************************************************
-problem helmholtz(vHelm, psi) = int2d(Th)(radius * (dx(vHelm) * dx(psi) + dy(vHelm) * dy(psi)))
-                              + int2d(Th)(vHelm * psi)
-                              - int2d(Th)(v * psi);

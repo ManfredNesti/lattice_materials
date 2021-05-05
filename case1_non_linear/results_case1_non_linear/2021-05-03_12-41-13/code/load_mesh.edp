@@ -1,2 +1,0 @@
-mesh Th1 = readmesh("mesh_write_mesh.msh");
-plot(Th1);
