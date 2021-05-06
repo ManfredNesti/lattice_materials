@@ -94,7 +94,7 @@ real qmax = 3.;
 
 // Helmholtz filtering
 int helm = 1;
-real radius = 1./25^2; // filtering radius
+real radius = 1./64; // filtering radius
 
 // Heaviside filtering
 int heav = 0;

@@ -8,7 +8,7 @@ int[int] ffordervel = [1];
 // Load and mesh
 int ld = 1;
 string path = "results_case1_non_linear/2021-05-06_09-56-15/";
-int idxld = 1; //index of the density from which you want to start
+int idxld = 0; //index of the density from which you want to start
 mesh Th;
 int n = 30;
 
@@ -58,7 +58,7 @@ real Volume = int2d(Th)(1.);
 
 // IPOPT params
 real [int] lm(1);
-int IPOPTmaxiter = 50;
+int IPOPTmaxiter = 40;
 int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
 gvi = 0;
 Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
@@ -94,7 +94,7 @@ real qmax = 3.;
 
 // Helmholtz filtering
 int helm = 1;
-real radius = 1./25^2; // filtering radius
+real radius = 1./64; // filtering radius
 
 // Heaviside filtering
 int heav = 0;
