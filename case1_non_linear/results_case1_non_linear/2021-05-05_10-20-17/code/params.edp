@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Load and mesh
-int ld = 0;
+int ld = 1;
 string path = "results_case1_non_linear/2021-05-05_09-08-32/";
 int idxld = 2; //index of the density from which you want to start
 mesh Th;

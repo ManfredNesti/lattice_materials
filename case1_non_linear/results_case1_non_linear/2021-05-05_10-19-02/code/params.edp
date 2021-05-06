@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Load and mesh
-int ld = 0;
+int ld = 1;
 string path = "results_case1_non_linear/2021-05-05_09-08-32/";
 int idxld = 2; //index of the density from which you want to start
 mesh Th;
@@ -90,7 +90,9 @@ else if(!ld) //hard-coded initial density
   v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
   // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
 }
-
+else
+{  
+}
 plot(v, fill = 1, cmm="Initial density", wait=0);
 
 // Power penalty

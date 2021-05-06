@@ -2,7 +2,7 @@ load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
 
-int ii = 0;
+int ii = 2;
 int jj = 0;
 
 include "macros.edp"
@@ -41,7 +41,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  );
 
 		// Helmholtz filtering
-		if(helm && ii%2 == 0){
+		if(helm){
 			helmholtz;
 			plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
 			plot(vHelm, wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
@@ -69,7 +69,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	}
 
 	// Sigmund filtering
-	if(sig && ii%2==1){
+	if(sig){
 		if(ii != maxit - 1 ){
 			// beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
 			// beta = betamax - (betamax - betamin) * exp(- ii / 2); //se vogliamo incrementare più "soft"
