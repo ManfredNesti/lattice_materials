@@ -3,7 +3,7 @@
 
 //cell mesh Th
 //cell density v
-plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/final_density_one_cell.ps", cmm = "Final Density in 1 cell");
+plot(v,  wait = 1, fill = 1, cmm = "Final density in 1 cell");
 
 mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1]); // [-1,1]^2 //HOW TO CHOOSE FROM WHAT Th2 START?
 fespace Xh2(Th2, P1);
@@ -22,7 +22,7 @@ real [int] v2old = v2[];
 Th2 = movemesh(Th2,[x+u2x,y+u2y]);
 v2 = v2;
 v2[] = v2old;
-plot(v2, fill = 1, wait = 0, ps = "results_case1_non_linear/final_density_after_shift.ps", cmm = "Final Density after shift");
+plot(v2, fill = 1,cmm = "v2 dopo shift",  wait = 1);
 
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem: with v2, on Th2?
