@@ -1,0 +1,120 @@
+// ***************************************************************************
+// Params
+// ***************************************************************************
+
+// Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
+int[int] ffordervel = [1];
+
+// Load and mesh
+int ld = 1;
+string path = "results_case1_non_linear/2021-05-06_09-56-15/";
+int idxld = 1; //index of the density from which you want to start
+mesh Th;
+int n = 30;
+
+if(ld) {
+  Th = readmesh(path+"mesh_initial.msh");
+  plot(Th, wait=1, cmm="Loaded mesh");
+} else {
+  Th = square(n, n, [x, y]);
+}
+
+// Params
+real nu12;
+real nu = 0.3;
+real E = 1.;
+real L = E*nu/(1-nu^2);
+real M = E/(2*(1+nu));
+real d1 = 0.3;        // u traction given
+real vf = 0.4;       // volume fraction
+real nutarget = -1; // nu target
+
+// Density space
+fespace Xhp(Th,P1);
+// fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
+Xhp v,     // density
+    vHelm, // Helmholtz filtered density
+    vHeav, // Heaviside filtered density
+    vSig,   // Sigmund tanh filtered density
+    wSig,  // Sigmund tanh filtered density (internal)
+    psi,
+    lz,
+    uz;     // density, filtered density, test density, params for IPOPT
+Xhp m11, m12, m22; // metric computation utilities
+
+// Displacement space
+fespace Vh(Th, [P1, P1]);
+Vh [u1,u2],       // displacement
+   [u10,u20] = [d1*x,0],     // old displacement (for Newton)
+   [psi1,psi2],   // test displacement
+   [varu1,varu2], // displacement increments (for Newton)
+   [err1,err2],   // errors (for Newton)
+   [l1, l2],      // lambda
+   [phi1, phi2];  // test lambda
+// Area space
+fespace Xh0(Th, P0); // periodic = [[2,y],[4,y],[1,x],[3,x]]);
+Xh0 vol = area;
+real Volume = int2d(Th)(1.);
+
+// IPOPT params
+real [int] lm(1);
+int IPOPTmaxiter = 50;
+int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
+gvi = 0;
+Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
+real tolv = 0.;
+real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
+real IPOPTtol = 1e-3;
+
+// Inital density
+int rnd = 0;
+int seed = 10;
+if (ld) {
+  ifstream fu(path+idxld+"_density.txt");
+  fu >> v[];
+  plot(v, wait=1, fill=1, cmm="Loaded density");
+} else if (rnd) {
+  srandom(seed);
+  for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
+  plot(v, fill = 1, cmm="Initial density", wait=0);
+} else {
+  // v = 0.5;
+  // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
+  // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
+  // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
+  // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
+  v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+  plot(v, fill = 1, cmm="Initial density", wait=0);
+}
+
+// Power penalty
+int pen = 0;
+real q = 3.;
+real qmax = 3.;
+
+// Helmholtz filtering
+int helm = 1;
+real radius = 1./64; // filtering radius
+
+// Heaviside filtering
+int heav = 0;
+
+// Main params
+int maxit = 12;
+
+// Sigmund filtering
+int sig = 1;
+int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
+real betamax = 1.5;
+real betamin = 1e-3;
+// real beta = betamax / (2.^20); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
+real beta = 4;
+real eta = 0.45;
+
+// Mesh adaptivity
+int meshad = 0;
+real tolmesh = 0.0001;
+real stopmesh = tolmesh + 1.;
+real tau = .00001;
+real maxsK;
+int ntold = Th.nt;
