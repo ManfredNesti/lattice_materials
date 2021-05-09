@@ -26,7 +26,7 @@ real E = 1.;
 real L = E*nu/(1-nu^2);
 real M = E/(2*(1+nu));
 real d1 = 0.3;        // u traction given
-real vf = 0.4;       // volume fraction
+real vf = 0.5;       // volume fraction
 real nutarget = -1; // nu target
 
 // Density space
@@ -94,7 +94,7 @@ real qmax = 3.;
 
 // Helmholtz filtering
 int helm = 1;
-real radius = 1./100^2; // filtering radius
+real radius = 1./50^2; // filtering radius
 
 // Heaviside filtering
 int heav = 0;
