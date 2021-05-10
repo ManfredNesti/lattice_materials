@@ -75,7 +75,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	}
 
 	// Mesh adaptivity
-	if(meshad || ii > 4){
+	if(meshad){
 		maxsK = 1;
 		ntold = Th.nt;
 		makemetrica(tau);
