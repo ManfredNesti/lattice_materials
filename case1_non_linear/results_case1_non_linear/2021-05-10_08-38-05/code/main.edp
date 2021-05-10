@@ -40,20 +40,20 @@ while(stopmesh > tolmesh && ii < maxit){
       //,maxiter=10);
 	  );
 
-	// Helmholtz filtering
-	if(helm && ii != maxit - 1){ /* && ii%2 == 0*/
-		helmholtz;
-		plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
-		plot(vHelm, wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
-		v = vHelm;
-	}
+		// Helmholtz filtering
+		if(helm){ /* && ii%2 == 0*/
+			helmholtz;
+			plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+			plot(vHelm, wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+			v = vHelm;
+		}
 
 	// Mesh adaptivity
   if(meshad){
     maxsK = 1;
     ntold = Th.nt;
     makemetrica(tau);
-  	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000/*, periodic=[[2,y],[4,y],[1,x],[3,x]]*/);
+  	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
 		savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
   	plot(Th, wait = 0, cmm="New mesh");
   	cout << "maxsK = " << maxsK << endl;

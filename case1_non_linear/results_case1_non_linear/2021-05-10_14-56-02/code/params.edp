@@ -112,7 +112,7 @@ real beta = betamax / (2.^12); // beta raddoppia ad ogni ii/jj fino a beta_max; 
 real eta = 0.45;
 
 // Mesh adaptivity
-int meshad = 1;
+int meshad = 0;
 real tolmesh = 0.0001;
 real stopmesh = tolmesh + 1.;
 real tau = .00001;
