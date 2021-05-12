@@ -6,9 +6,9 @@
 int[int] ffordervel = [1];
 
 // Load and mesh
-int ld = 4;
-string path = "results_case1_non_linear/2021-05-11_09-06-06/";
-int idxld = 4; //index of the density from which you want to start
+int ld = 0;
+string path = "results_case1_non_linear/2021-05-10_08-38-05/";
+int idxld = 10; //index of the density from which you want to start
 mesh Th;
 int n = 50;
 
@@ -107,7 +107,7 @@ int sig = 1;
 int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
 real betamax = 8;
 real betamin = 1e-3;
-real beta = betamax / (2.^12) * 2.^4; // beta raddoppia ad ogni ii/jj fino a beta_max; ATTENZIONE se load density attivo
+real beta = betamax / (2.^12); // beta raddoppia ad ogni ii/jj fino a beta_max; ATTENZIONE se load density attivo
 // real beta = 1;
 real eta = 0.45;
 
