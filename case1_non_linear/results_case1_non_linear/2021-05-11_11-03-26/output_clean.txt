@@ -1,0 +1,98 @@
+   22 : savemesh (Th, "results_case1_non_linear/mesh_initial.msh" );
+   23 : while(stopmesh > tolmesh && ii < maxit){
+   24 : 
+   25 : 	jj = 0;
+   26 : 
+   27 : 	// Power penalty law
+   28 : 	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
+   29 : 	else q = qmax;
+   30 : 
+   31 : 
+   32 : 	IPOPT(J, gradJ, ipC, ipGradC, v[],
+   33 : 	  lb  = xlb[], ub  = xub[],
+   34 :    	  clb = clb  , cub = cub  ,
+   35 : 	  checkindex = 1, structjacc = [gvi,gvj],
+   36 :       maxiter = IPOPTmaxiter + 100 * (ii == 0), warmstart = ii,
+   37 : 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
+   38 : 	  //printlevel = 1,
+   39 : 	  //derivativetest="first-order");
+   40 :       //,maxiter=10);
+   41 : 	  );
+   42 : 
+   43 : 		// Helmholtz filtering
+   44 : 		if(helm && ii != maxit - 1){
+   45 : 			helmholtz;
+   46 : 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+   47 : 			plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+   48 : 			v = vHelm;
+   49 : 		}
+   50 : 
+   51 : 	// Mesh adaptivity
+   52 :   if(meshad){
+   53 :     maxsK = 1;
+   54 :     ntold = Th.nt;
+   55 :     makemetrica(tau);
+   56 :   	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+   57 : 		savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
+   58 :   	plot(Th, wait = 0, cmm="New mesh");
+   59 :   	cout << "maxsK = " << maxsK << endl;
+   60 :   }
+   61 : 
+   62 : 	// Heaviside filtering
+   63 : 	if(heav && ii != maxit - 1){
+   64 :     plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
+   65 : 		real betaH = 10*(ii < 19) + 7*(ii == 19);
+   66 : 		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
+   67 :     plot(vHeav, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
+   68 :     v = vHeav;
+   69 : 	}
+   70 : 
+   71 : 	// Sigmund filtering
+   72 : 	if(sig && ii != maxit - 1){
+   73 : 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
+   74 : 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
+   75 : 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+   76 : 			plot(vSig, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
+   77 : 			v = vSig;
+   78 : 			beta += 1;
+   79 : 			eta += 0.02;
+   80 : 		}
+   81 : 	}
+   82 : 
+   83 :   // Mesh projection (only for mesh adaptivity)
+   84 :   if(meshad){
+   85 :   	v = v;
+   86 :   	xlb = xlb;
+   87 :   	xub = xub;
+   88 :   	gvi = gvi;
+   89 :   	gvj = 0:Xhp.ndof-1;
+   90 :   	lz = lz;
+   91 :   	uz = uz;
+   92 :   	m11 = m11;
+   93 :   	m12 = m12;
+   94 :   	m22 = m22;
+   95 : 
+   96 :   	stopmesh = abs(Th.nt - real(ntold))/ntold;
+   97 :   }
+   98 : 
+   99 : 	ii += 1;
+  100 : 
+  101 : 	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
+  102 : 
+  103 : 	{
+  104 : 	ofstream fout("results_case1_non_linear/"+ii+"_density.txt");
+  105 : 	fout << v[];
+  106 : 	}
+  107 : 	plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density.ps", cmm = "Density "+ii);
+  108 : 	savevtk("results_case1_non_linear/"+ii+"_density.vtk", Th, v, dataname="Density", order=ffordervel);
+  109 : 
+  110 : 	// outnu << nu12 << endl;
+  111 : }
+ Error line number 111, in file main.edp, before  token }
+syntax error
+  current line = 108
+Compile error : syntax error
+	line number :111, }
+error Compile error : syntax error
+	line number :111, }
+ code = 1 mpirank: 0

@@ -2,7 +2,7 @@ load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
 
-int ii = 0;
+int ii = 1;
 int jj = 0;
 
 include "macros.edp"
@@ -41,10 +41,10 @@ while(stopmesh > tolmesh && ii < maxit){
 	  );
 
 		// Helmholtz filtering
-		if(helm && ii != maxit - 1){
+		if(helm){ /* && ii%2 == 0*/
 			helmholtz;
-			plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
-			plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+			plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+			plot(vHelm, wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
 			v = vHelm;
 		}
 
@@ -60,23 +60,29 @@ while(stopmesh > tolmesh && ii < maxit){
   }
 
 	// Heaviside filtering
-	if(heav && ii != maxit - 1){
-    plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
+	if(heav){
+    plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
 		real betaH = 10*(ii < 19) + 7*(ii == 19);
 		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
-    plot(vHeav, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
+    plot(vHeav, wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
     v = vHeav;
 	}
 
 	// Sigmund filtering
-	if(sig && ii != maxit - 1){
-			plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
+	if(sig){ /* && ii%2==1*/
+		if(ii != maxit - 1 ){
+			// beta = 2. * beta; //se vogliamo raddoppiare beta ad ogni iterazione ii
+			// beta = betamax - (betamax - betamin) * exp(- ii / 2); //se vogliamo incrementare più "soft"
+			// eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+			plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-			plot(vSig, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
+			plot(vSig, wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
 			v = vSig;
 			beta += 1;
-			eta += 0.02;
+			// beta = beta * 2.;
+			//eta += 0.02;
+		}
 	}
 
   // Mesh projection (only for mesh adaptivity)
@@ -103,7 +109,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	ofstream fout("results_case1_non_linear/"+ii+"_density.txt");
 	fout << v[];
 	}
-	plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density.ps", cmm = "Density "+ii);
+	plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density.ps", cmm = "Density "+ii);
 	savevtk("results_case1_non_linear/"+ii+"_density.vtk", Th, v, dataname="Density", order=ffordervel);
 
 	outnu << nu12 << endl;
@@ -111,6 +117,6 @@ while(stopmesh > tolmesh && ii < maxit){
 
 cout << Th.nt << endl;
 
-plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/final_density.ps", cmm = "Final Density");
+plot(v,  wait = 1, fill = 1, value = 1, ps = "results_case1_non_linear/final_density.ps", cmm = "Final Density");
 
 include "checknu.edp";

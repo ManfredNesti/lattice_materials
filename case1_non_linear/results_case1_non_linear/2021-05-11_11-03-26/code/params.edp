@@ -6,7 +6,7 @@
 int[int] ffordervel = [1];
 
 // Load and mesh
-int ld = 0;
+int ld = 1;
 string path = "results_case1_non_linear/best_results/2021-05-11_09-14-50_SIGMA_STRUCTURE/";
 int idxld = 6; //index of the density from which you want to start
 mesh Th;
@@ -100,7 +100,7 @@ real radius = 1./80^2; // filtering radius
 int heav = 0;
 
 // Main params
-int maxit = 6;
+int maxit = 12;
 
 // Sigmund filtering
 int sig = 1;

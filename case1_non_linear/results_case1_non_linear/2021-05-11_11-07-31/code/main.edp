@@ -77,6 +77,7 @@ while(stopmesh > tolmesh && ii < maxit){
 			v = vSig;
 			beta += 1;
 			eta += 0.02;
+		}
 	}
 
   // Mesh projection (only for mesh adaptivity)

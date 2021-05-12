@@ -76,7 +76,7 @@ func real J(real[int] & v)
   }
 
 	// Newton initialization
-	[u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+	// [u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
 	[u1, u2] = [u10, u20]; // u_1
 	real tol = 1.e-12;
 	real res = 2. * tol;
