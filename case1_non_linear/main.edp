@@ -79,6 +79,17 @@ while(stopmesh > tolmesh && ii < maxit){
 			eta += 0.02;
 	}
 
+	// Mesh adaptivity
+	if(meshad /*|| ii > 4*/){
+		maxsK = 1;
+		ntold = Th.nt;
+		makemetrica(tau);
+		Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000/*, periodic=[[2,y],[4,y],[1,x],[3,x]]*/);
+		savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
+		plot(Th, wait = 0, cmm="New mesh");
+		cout << "maxsK = " << maxsK << endl;
+	}
+
   // Mesh projection (only for mesh adaptivity)
   if(meshad){
   	v = v;
