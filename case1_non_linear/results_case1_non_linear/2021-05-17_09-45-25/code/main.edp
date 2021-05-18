@@ -2,7 +2,7 @@ load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
 
-int ii = 4;
+int ii = 5;
 int jj = 0;
 
 include "macros.edp"
@@ -80,7 +80,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	}
 
 	// Mesh adaptivity
-	if(meshad){
+	if(meshad /*|| ii > 4*/){
 		maxsK = 1;
 		ntold = Th.nt;
 		makemetrica(tau);

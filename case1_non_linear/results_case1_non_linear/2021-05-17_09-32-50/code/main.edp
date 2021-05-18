@@ -2,7 +2,7 @@ load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
 
-int ii = 4;
+int ii = 5;
 int jj = 0;
 
 include "macros.edp"
@@ -48,16 +48,16 @@ while(stopmesh > tolmesh && ii < maxit){
 			v = vHelm;
 		}
 
-	// // Mesh adaptivity
-  // if(meshad){
-  //   maxsK = 1;
-  //   ntold = Th.nt;
-  //   makemetrica(tau);
-  // 	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
-	// 	savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
-  // 	plot(Th, wait = 0, cmm="New mesh");
-  // 	cout << "maxsK = " << maxsK << endl;
-  // }
+	// Mesh adaptivity
+  if(meshad){
+    maxsK = 1;
+    ntold = Th.nt;
+    makemetrica(tau);
+  	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+		savemesh (Th, "results_case1_non_linear/meshii"+ii+".msh" );
+  	plot(Th, wait = 0, cmm="New mesh");
+  	cout << "maxsK = " << maxsK << endl;
+  }
 
 	// Heaviside filtering
 	if(heav && ii != maxit - 1){
@@ -80,7 +80,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	}
 
 	// Mesh adaptivity
-	if(meshad){
+	if(meshad /*|| ii > 4*/){
 		maxsK = 1;
 		ntold = Th.nt;
 		makemetrica(tau);
