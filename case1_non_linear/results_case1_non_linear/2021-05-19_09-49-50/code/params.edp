@@ -13,8 +13,8 @@ mesh Th;
 int n = 30;
 
 if(ld) {
-  Th = readmesh(path+"meshii5.msh");
-  plot(Th, wait = 1, cmm="Loaded mesh");
+  Th = readmesh(path+"mesh_initial.msh");
+  plot(Th, wait = 0, cmm="Loaded mesh");
 } else {
   Th = square(n, n, [x, y]);
 }
