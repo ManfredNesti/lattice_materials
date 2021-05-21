@@ -41,7 +41,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	  );
 
 		// Helmholtz filtering
-		if(helm && ii != maxit - 1 && ii % 2 == 1){
+		if(helm && ii != maxit - 1){
 			helmholtz;
 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
 			plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results_case1_non_linear/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
@@ -77,10 +77,9 @@ while(stopmesh > tolmesh && ii < maxit){
 			v = vSig;
 			beta += 1;
 			eta += 0.02;
-
 	}
 
-	// Mesh projection (only for mesh adaptivity)
+  // Mesh projection (only for mesh adaptivity)
   if(meshad){
   	v = v;
   	xlb = xlb;
