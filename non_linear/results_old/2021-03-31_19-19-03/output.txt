@@ -1,0 +1,12 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+
+ Error line number 19, in file params.edp, before  token wSig
+syntax error
+  current line = 18
+Compile error : syntax error
+	line number :19, wSig
+error Compile error : syntax error
+	line number :19, wSig
+ code = 1 mpirank: 0

@@ -1,0 +1,13 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ The Identifier IPOPTmaxiter does not exist 
+
+ Error line number 8, in file main.edp, before  token IPOPTmaxiter
+
+  current line = 6
+Compile error : 
+	line number :8, IPOPTmaxiter
+error Compile error : 
+	line number :8, IPOPTmaxiter
+ code = 1 mpirank: 0

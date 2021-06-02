@@ -1,0 +1,16 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ error operator (  <l> 
+ 	 c(	  <St7complexIdE> :   <St7complexIdE> )
+ 	 c(	  <d> :   <d> )
+ We have ambiguity 2
+
+ Error line number 15, in file gradJ.edp, before  token )
+
+  current line = 15
+Compile error : 
+	line number :15, )
+error Compile error : 
+	line number :15, )
+ code = 1 mpirank: 0

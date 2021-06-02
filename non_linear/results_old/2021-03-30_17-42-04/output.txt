@@ -1,0 +1,12 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+
+ Error line number 16, in file J.edp, before  token   Density post-Sigmund
+syntax error
+  current line = 16
+Compile error : syntax error
+	line number :16,   Density post-Sigmund
+error Compile error : syntax error
+	line number :16,   Density post-Sigmund
+ code = 1 mpirank: 0

@@ -1,0 +1,13 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ No operator .[] for type <10LinearCombI6MDroit4C_F0E>
+
+ Error line number 65, in file gradJ.edp, before  token ]
+
+  current line = 65
+Compile error : 
+	line number :65, ]
+error Compile error : 
+	line number :65, ]
+ code = 1 mpirank: 0

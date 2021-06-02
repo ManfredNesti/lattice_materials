@@ -1,0 +1,15 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ The identifier q exists 
+ 	  the existing type is <Pd>
+ 	  the new  type is <Pd>
+
+ Error line number 77, in file params.edp, before  token _
+
+  current line = 77
+Compile error : 
+	line number :77, _
+error Compile error : 
+	line number :77, _
+ code = 1 mpirank: 0

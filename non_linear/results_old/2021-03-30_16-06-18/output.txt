@@ -1,0 +1,12 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+
+ Error line number 92, in file params.edp, before  token _
+syntax error
+  current line = 92
+Compile error : syntax error
+	line number :92, _
+error Compile error : syntax error
+	line number :92, _
+ code = 1 mpirank: 0

@@ -1,0 +1,15 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ error operator ++  <Pd> 
+ List of choices 
+	 (	  <l> :   <Pl> )
+
+ Error line number 55, in file main.edp, before  token ++
+
+  current line = 55
+Compile error : 
+	line number :55, ++
+error Compile error : 
+	line number :55, ++
+ code = 1 mpirank: 0
