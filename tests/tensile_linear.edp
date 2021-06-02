@@ -1,7 +1,6 @@
 // ***************************************************************************
 // Tensile linear
 // ***************************************************************************
-exec("mkdir tensile_linear");
 exec("rm tensile_linear.csv");
 exec("touch tensile_linear.csv");
 
