@@ -7,18 +7,6 @@ func real J(real[int] & v)
   w[] = v;
   plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
 
-  // Sigmund filtering
-  if(sigIN){
-    plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
-    eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
-  	//beta = 2. * beta;
-    // beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
-		wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
-                   / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-    plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
-		w = wSig;
-  }
-
   cout << "*********************************************" << endl;
   cout << "PRIMAL PROBLEM ..." << endl;
   include "cost_function/primal.edp";

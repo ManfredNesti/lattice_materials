@@ -104,10 +104,12 @@ int maxit = 6;
 
 // Sigmund filtering
 int sig = 1;
-real beta0 = 3.5;
-real eta0 = 0.45;
-real betaincr = 1;
-real etaincr = 0.02;
+int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
+real betamax = 1.5;
+real betamin = 1e-3;
+// real beta = betamax / (2.^12); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
+real beta = 3.5;
+real eta = 0.45;
 
 // Mesh adaptivity
 int meshad = 1;

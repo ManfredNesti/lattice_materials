@@ -4,9 +4,7 @@
 load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
-
 int ii = 0;
-int jj = 0;
 
 include "macros.edp"
 include "params.edp";
@@ -42,7 +40,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	}
 
 	// Mesh filter
-	if(meshad && ii != maxit - 1){
+	if(meshad && (ii == 4 || ii == 5)){
 	  maxsK = 1;
 	  ntold = Th.nt;
 	  makemetrica(tau);
@@ -63,20 +61,17 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	// Sigmund filter
 	if(sig && ii != maxit - 1){
-		real beta = beta0 + betaincr * ii;
-		real eta = eta0 + etaincr * ii
-		plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
-		vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
-		               / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-		plot(vSig, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
-		v = vSig;
-
-		// beta += 1;
-		// eta += 0.02;
+			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
+			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
+		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+			plot(vSig, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
+			v = vSig;
+			beta += 1;
+			eta += 0.02;
 	}
 
   // Mesh projection
-  if(meshad && ii != maxit - 1){
+  if(meshad && (ii == 4 || ii == 5)){
   	v = v;
   	xlb = xlb;
   	xub = xub;
