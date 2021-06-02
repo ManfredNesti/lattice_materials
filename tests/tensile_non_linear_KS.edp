@@ -2,20 +2,21 @@
 // Tensile non linear with energy formula (d)
 // from work of Klarbring and Strömberg (2013)
 // ***************************************************************************
+exec("mkdir tensile_non_linear_KS");
 include "../non_linear/macros.edp";
 
 real d1start = 1.0, // 1: non linear, 0: linear
      d1final = 0.01,
      d1factor = 2.;
 
-exec("rm tensile_non_linear_KS_linear_consistency.csv");
-exec("touch tensile_non_linear_KS_linear_consistency.csv");
-ofstream outlinear("tensile_non_linear_KS_linear_consistency.csv", append);
+exec("rm tensile_non_linear_KS/linear_consistency.csv");
+exec("touch tensile_non_linear_KS/linear_consistency.csv");
+ofstream outlinear("tensile_non_linear/KS_linear_consistency.csv", append);
 outlinear << "d1,nu" << endl;
 
-exec("rm tensile_non_linear_KS_check_newton_jacobian.txt");
-exec("touch tensile_non_linear_KS_check_newton_jacobian.txt");
-ofstream outjac("tensile_non_linear_KS_check_newton_jacobian.txt", append);
+exec("rm tensile_non_linear_KS/check_newton_jacobian.txt");
+exec("touch tensile_non_linear_KS/check_newton_jacobian.txt");
+ofstream outjac("tensile_non_linear_KS/check_newton_jacobian.txt", append);
 
 
 for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
@@ -69,9 +70,9 @@ for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
   // ***************************************************************************
   // Newton loop
   // ***************************************************************************
-  exec("rm tensile_non_linear_KS_newton_convergence.csv");
-  exec("touch tensile_non_linear_KS_newton_convergence.csv");
-  ofstream outconv("tensile_non_linear_KS_newton_convergence.csv", append);
+  exec("rm tensile_non_linear_KS/newton_convergence.csv");
+  exec("touch tensile_non_linear_KS/newton_convergence.csv");
+  ofstream outconv("tensile_non_linear_KS/newton_convergence.csv", append);
   outconv << "L2_error" << endl;
   while (loopcount <= loopmax && res >= tol){
       loopcount ++;
