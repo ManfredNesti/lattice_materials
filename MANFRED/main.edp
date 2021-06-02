@@ -49,7 +49,7 @@ while(stopmesh > tolmesh && ii < maxit){
 		}
 
 	// Mesh adaptivity
-  if(meshad){
+  if(meshad && (ii == 4 || ii == 5)){
     maxsK = 1;
     ntold = Th.nt;
     makemetrica(tau);
@@ -80,7 +80,7 @@ while(stopmesh > tolmesh && ii < maxit){
 	}
 
   // Mesh projection (only for mesh adaptivity)
-  if(meshad){
+  if(meshad && (ii == 4 || ii == 5)){
   	v = v;
   	xlb = xlb;
   	xub = xub;

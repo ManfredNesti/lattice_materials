@@ -4,7 +4,7 @@
 //cell mesh Th
 //cell density v
 plot(v,  wait = 0, fill = 1, ps = "results_case1_non_linear/final_density_one_cell.ps", cmm = "Final Density in 1 cell");
-n = 50;
+n = 100;
 mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1], flags=1); // [-1,1]^2 //HOW TO CHOOSE FROM WHAT Th2 START?
 fespace Xh2(Th2, P1);
 Xh2 v2; // densità su Th2
