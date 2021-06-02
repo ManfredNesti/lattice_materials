@@ -14,7 +14,9 @@ real nlstart = 1.0, // 1: non linear, 0: linear
      nldecr = 0.1;
 
 for (real nl = nlstart; nl >= nlfinal; nl -= nldecr) {
+  // ***************************************************************************
   // Macros
+  // ***************************************************************************
   // Linear part of epsilon
   macro EL(u, v) [dx(u), (dx(v)+dy(u)), dy(v)] // is [epsilon_11, 2epsilon_12, epsilon_22]
   // macro EL(u, v) [EL11(u, v), 2*EL12(u, v), EL22(u, v)] //is [epsilon_11, 2epsilon_12, epsilon_22]
@@ -69,7 +71,9 @@ for (real nl = nlstart; nl >= nlfinal; nl -= nldecr) {
   macro sigma12(u, v) (2 * mu * E12(u, v)) //
   macro sigma22(u, v) (2 * mu * E22(u, v) + lambda * trE(u, v)) //
 
+  // ***************************************************************************
   // Parameters
+  // ***************************************************************************
   real vold;
   real nu = 0.3;
   real Pa = 0; // no forces
@@ -79,7 +83,6 @@ for (real nl = nlstart; nl >= nlfinal; nl -= nldecr) {
   real coef = 0.1;
   real u = 1., v = -0.1; // traction BC
 
-  // Mesh & Fespace
   int n = 20;
   mesh  Th = square(n, n);
   fespace Xh(Th, P1);
@@ -112,7 +115,9 @@ for (real nl = nlstart; nl >= nlfinal; nl -= nldecr) {
 
   func A = [[a11, a12, a13], [a21, a22, a23], [a31, a32, a33]];
 
-  // Problem
+  // ***************************************************************************
+  // Problems
+  // ***************************************************************************
   // Mass matrix for the residual
   varf vmass ([uu, vv], [w, s], solver=CG) = int2d(Th)(uu*w + vv*s);
   matrix M = vmass(Vh, Vh);
@@ -131,7 +136,9 @@ for (real nl = nlstart; nl >= nlfinal; nl -= nldecr) {
     + on(4, uu = 0)
     ;
 
-  // Newton's method
+    // ***************************************************************************
+    // Newton method
+    // ***************************************************************************
   for (int i = 0; i < 10; i++){
     cout << "Loop " << i << endl;
 
@@ -156,30 +163,31 @@ for (real nl = nlstart; nl >= nlfinal; nl -= nldecr) {
     u1 = uu;
     cout << "u1 min = " <<u1[].min << ", u1 max = " << u1[].max << endl;
     cout << "v1 min = " <<v1[].min << ", v2 max = " << v1[].max << endl;
-
-    // Plot
-    // plot([uu, vv], wait=true, cmm="uu, vv");
-
-    // Update
     un[] -= uu[];
-    // plot([un, vn], wait=true, cmm="displacement");
+
+    // Plots
+    // plot([uu, vv], wait = 1, cmm = "Displacement");
 
     if (res < 1e-5) break;
   }
 
-  // Plot
+  // Plots
   // plot([un, vn], wait = true, "nl = "+nl);
   // plot(un, fill = 1, dim = 3, wait = 1, cmm = "u1, nl = "+nl);
   // plot(vn, fill = 1, dim = 3, wait = 1, cmm = "u2, nl = "+nl);
 
+  // ***************************************************************************
   // Movemesh
+  // ***************************************************************************
   real minarea = checkmovemesh(Th, [x + coef * un, y + coef * vn]);
-  if (minarea > 0) { // movemesh will be ok
+  if (minarea > 0) {// movemesh will be ok
     mesh th1 = movemesh(Th, [x + coef * un, y + coef * vn]);
     plot(Th, th1, wait = 1, cmm = "nl = "+nl);
   } else cout << "MOVEMESH ERROR: Min area = " << minarea << endl;
 
-  // Estimated nu
+  // ***************************************************************************
+  // Estimation of nu
+  // ***************************************************************************
   real d1 = int1d(Th, 2)(un) - int1d(Th, 4)(un);
   real d2 = int1d(Th, 3)(vn) - int1d(Th, 1)(vn);;
   cout << "d1 = " << d1 << endl;

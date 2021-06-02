@@ -2,283 +2,113 @@
 // Tensile non linear with energy formula (d)
 // from work of Klarbring and Strömberg (2013)
 // ***************************************************************************
-exec("rm tensile_linear_KS.csv");
-exec("touch tensile_linear_KS.csv");
+include "../non_linear/macros.edp";
 
-// Macro
-//Gradient of a vector field (u1, u2)
-macro grad11(u1, u2) (dx(u1)) //
-macro grad12(u1, u2) (dy(u1)) //
-macro grad21(u1, u2) (dx(u2)) //
-macro grad22(u1, u2) (dy(u2)) //
+real d1start = 1.0, // 1: non linear, 0: linear
+     d1final = 0.01,
+     d1factor = 2.;
 
-//Deformation gradient F
-macro F11(u1,u2) (1.0 + grad11(u1,u2)) //
-macro F12(u1,u2) (0.0 + grad12(u1,u2)) //
-macro F21(u1,u2) (0.0 + grad21(u1,u2)) //
-macro F22(u1,u2) (1.0 + grad22(u1,u2)) //
+exec("rm tensile_non_linear_KS_linear_consistency.csv");
+exec("touch tensile_non_linear_KS_linear_consistency.csv");
+ofstream outlinear("tensile_non_linear_KS_linear_consistency.csv", append);
+outlinear << "d1,nu" << endl;
 
-// Components Green-Lagrange strain tensor E
-macro E11(u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
-macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
-macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
-macro E22(u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
+exec("rm tensile_non_linear_KS_check_newton_jacobian.txt");
+exec("touch tensile_non_linear_KS_check_newton_jacobian.txt");
+ofstream outjac("tensile_non_linear_KS_check_newton_jacobian.txt", append);
 
-macro traceE(u1,u2)	(E11(u1,u2) + E22(u1,u2)) // Trace of Green-Lagrange tensor
 
-macro detF(u1,u2) (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )  //J determinant of F
+for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
+  // ***************************************************************************
+  // Parameters
+  // ***************************************************************************
+  real vold;
+  real coef = 0.1;
+  real q = 4.;
+  real nu = 0.3;
+  real E = 1.;
+  real L = E * nu / (1 - nu^2);
+  real M = E / (2 * (1 + nu));
 
-//Right Cauchy-Green deformation tensor C
-macro C11(u1,u2) (2*E11(u1,u2) + 1.0) //
-macro C12(u1,u2) (2*E12(u1,u2)) //
-macro C21(u1,u2) (2*E21(u1,u2)) //
-macro C22(u1,u2) (2*E22(u1,u2) + 1.0) //
+  // Mesh & Fespace
+  mesh   Th = square(20, 20);
+  fespace Xh(Th, P1);
+  real rho = 1;
+  real w = 1;
 
-macro detC(u1,u2) (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2)) // determinantof C
+  //displacement space
+  fespace Vh(Th, [P1, P1]);
+  Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2],
+     [u,v], [du,dv]; // var for check newton
 
-//Inverse of C: C^-1 (symmetric)
-macro invC11(u1,u2) (1/detC(u1,u2) * (C22(u1,u2))) //
-macro invC12(u1,u2) (1/detC(u1,u2) * ((-1)* C12(u1,u2))) //
-macro invC21(u1,u2) (1/detC(u1,u2) * ((-1)* C21(u1,u2))) //
-macro invC22(u1,u2) (1/detC(u1,u2) * (C11(u1,u2))) //
+  include "../non_linear/cost_function/primal.edp";
 
-// Second Piola-Kirchhoff stress tensor for Phi4 Sij forse non serve ...
+  func real errorL2()
+  {
+   err1[] = u1[];
+   err1[] -= u10[];
 
-// Dijkl = - d(Cij^-1)/dEkl !!! verificata abbastanza ... anche il meno
-macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2 ) //
-macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 ) // = D1121, D1112, D2111 for symmetry of C,invC and E
-macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2 ) // = D2211
-macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1212(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) // = D2121, D1221, D2112
-macro D2121(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D1221(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
-macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
+   real erru = int2d(Th)(err1^2 + err2^2);
+   real normu = int2d(Th)(u10^2 + u20^2);
+   // return error estimate (stopping criterion)
+   return sqrt(erru / (normu+1e-15));
+  }
 
-//dEij(u1,u2)/du * lambda (l'ho corretto: CI ERAVAMO PERSI UN *0.5 PER STRADA?)
-macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
-macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
-macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
-macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2)) //
+  // ***************************************************************************
+  // Newton initialization
+  // ***************************************************************************
+  [u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+  [u1, u2] = [u10, u20]; // u_1
+  real tol = 1.e-12;
+  real res = 2. * tol;
+  int loopcount = 0;
+  int loopmax = 100;
+  real alpha = 1.0;
 
-//d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (this is the test function)
-macro grad2E11 (phi1,phi2,l1,l2) (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2)) //
-macro grad2E12 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
-macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
-macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
 
-// Parameters
-real q = 4.; //power for penalty method
+  // ***************************************************************************
+  // Newton loop
+  // ***************************************************************************
+  exec("rm tensile_non_linear_KS_newton_convergence.csv");
+  exec("touch tensile_non_linear_KS_newton_convergence.csv");
+  ofstream outconv("tensile_non_linear_KS_newton_convergence.csv", append);
+  outconv << "L2_error" << endl;
+  while (loopcount <= loopmax && res >= tol){
+      loopcount ++;
+      cout << "Newton iteration " << loopcount << endl;
+      // Solve
+      primallinearized;
+      // Update
+      u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u
+      // update error for the stopping criterion
+      res = errorL2();
+      outconv << res << endl;
+      //Update old solution
+      u10[] = u1[];
+  }
 
-real vold;
-real Pa = 0; //no forces
+  // ***************************************************************************
+  // Movemesh
+  // ***************************************************************************
+  real minarea = checkmovemesh(Th, [x+ coef * u1, y+coef * u2]);
+  if (minarea > 0) {// movemesh will be ok
+    mesh th1 = movemesh(Th, [x + coef * u1, y + coef * u2]);
+    plot(Th, th1, wait = 1, cmm = "d1 = "+d1);
+  } else cout << "MOVEMESH ERROR: Min area = " << minarea << endl;
 
-real nu = 0.3;
-real E = 1.;
-real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
-real M = E/(2*(1+nu));
 
-real coef = 0.1;
-// real  u_given = 1.,  v_given = -0.1; //traction bc
+  // ***************************************************************************
+  // Estimation of nu
+  // ***************************************************************************
+  d1 = int1d(Th, 2)(u1) - int1d(Th, 4)(u1);
+  real d2 = int1d(Th, 3)(u2) /*- int1d(Th,1)(u2)*/;
+  // cout << " tolto: " << int1d(Th,1)(u2) << endl; // viene 1e-32 effettivamente ci aspettiamo sia zero
+  cout << "d1 = " << d1 << endl;
+  cout << "d2 = " << d2 << endl;
+  real nu12 = - d2 / d1;
+  cout << "Estimated nu: " << nu12 << endl;
 
-// Mesh & Fespace
-mesh   Th = square(20,20);
-//density space
-fespace Xh(Th,P1);
-fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
-Xhp rho;
-rho = 1;
+  outlinear << d1 << "," << nu12 << endl;
 
-//displacement space
-fespace Vh(Th, [P1, P1]);
-Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2],
-   [u,v], [du,dv]; //var for check newton
-
-//Problem: try Newton method
-problem primallinearized([varu1,varu2], [psi1, psi2]) =
-  int2d(Th) (L * (2.0*detF(u10,u20)-1.) * (dx(psi1)*F22(u10,u20) + dy(psi2)*F11(u10,u20) - dy(psi1)*F21(u10,u20) - dx(psi2)*F12(u10,u20))
-                                        * (invC11(u10,u20) * gradE11(u10,u20,varu1,varu2) + invC12(u10,u20) * gradE12(u10,u20,varu1,varu2)
-                                        +  invC21(u10,u20) * gradE21(u10,u20,varu1,varu2) + invC22(u10,u20) * gradE22(u10,u20,varu1,varu2))
-
-           + L * (detF(u10,u20)-1) * detF(u10,u20) * ( - D1111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + invC11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2)
-                                                       - D1211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + invC12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2)
-                                                       - D2111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + invC21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2)
-                                                       - D2211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + invC22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2)
-                                                   )
-
-            + 2.0*M* (gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + E11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2) +
-                      gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + E12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2) +
-                      gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + E21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2) +
-                      gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + E22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2) )
-           )
-
-    + int2d(Th) (L*detF(u10,u20)*(detF(u10,u20)-1.) * (invC11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                                                     + invC12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-          																					 + invC21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-          																					 + invC22(u10,u20) * gradE22(u10,u20,psi1,psi2))
-     				    + 2.0 * M * (E11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                           + E12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-    				               + E21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-                           + E22(u10,u20) * gradE22(u10,u20,psi1,psi2)))
-    + on(2,varu1=0) //dirichlet
-    + on(1,varu2=0) // symmetric bc
-    + on(4,varu1=0) // symmetric bc
-  ;
-
-//Initialization:
-[u10, u20] = [1*x, 0]; //u_k old che soddisfa BC Dirichlet
-[u1, u2] = [u10, u20]; // u_1
-real tol = 1.e-3;
-real res = 2. * tol;
-int loopcount = 0;
-int loopmax = 100;
-real alpha = 1.0;
-
-// for Newton method
-func real errorL2()
-{
-  // store increments
-  err1[] = u1[];
-  err1[] -= u10[];
-
-  real erru = int2d(Th)(err1^2 + err2^2);
-  real normu = int2d(Th)(u10^2 + u20^2);
-  // return error estimate (stopping criterion)
-  return sqrt(erru / (normu+1e-15));
-
+  include "check_newton_jac.edp";
 }
-
-// Iterations
-while (loopcount <= loopmax && res >= tol){
-    loopcount ++;
-    cout << "Loop " << loopcount << endl;
-
-    // Solve
-    primallinearized;
-    // Update
-    u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u (- se trovassimo -deltau)
-    // update err for the stopping criterion
-    res = errorL2();
-
-    cout << " L^2 residual = " << res << endl;
-    out1 << res ;
-    out1 << endl;
-    //Update old solution
-    u10[] = u1[];
-
-    // Plot
-    plot([u1,u2], cmm="displacement");
-}
-
-// Plot
-plot([u1, u2], wait=true);
-plot(u1,fill=1,dim=3,wait = 1, cmm="u1");
-plot(u2,fill=1,dim=3,wait = 1, cmm="u2");
-
-// Movemesh
-real minarea = checkmovemesh(Th, [x+coef*u1, y+coef*u2]);
-if (minarea > 0) { //movemesh will be ok
-  mesh th1 = movemesh(Th, [x+coef*u1, y+coef*u2]);
-  plot(th1, wait=true);
-  plot(Th, th1, wait=true);
-}
-
-cout << " --- ERROR --- Min area = " << minarea << endl;
-
-// Plot
-
-//estimated nu
-real d1 = int1d(Th,2)(u1) - int1d(Th,4)(u1);
-real d2 = int1d(Th,3)(u2) /*- int1d(Th,1)(u2)*/;
-// cout << " tolto: " << int1d(Th,1)(u2) << endl; // viene 1e-32 effettivamente ci aspettiamo sia zero
-cout << "d1 = " << d1 << endl;
-cout << "d2 = " << d2 << endl;
-real nu12 = -d2/d1;
-cout << "estimated nu = " << nu12 << endl;
-
-//output
-// out2 << nu12 << ",";
-// out2 << endl;
-
-// Check newton
-real eps = 1e-4;
-[u,v] = [x, 0]; // trial u
-[du,dv] = [sin(2*pi*x)*sin(2*pi*y), sin(2*pi*x)*sin(2*pi*y)];   // trial du
-varf Jac ([dummy1,dummy2],[w1,w2]) = int2d(Th) (L* (2.0*detF(u,v)-1.) * (dx(w1)*F22(u,v) + dy(w2)*F11(u,v) - dy(w1)*F21(u,v) - dx(w2)*F12(u,v))
-                                     * (invC11(u,v) * gradE11(u,v,du,dv) + invC12(u,v) * gradE12(u,v,du,dv)
-                                      + invC21(u,v) * gradE21(u,v,du,dv) + invC22(u,v) * gradE22(u,v,du,dv))
-                 + L* (detF(u,v)-1) * detF(u,v) * ( - D1111(u,v) * gradE11(u,v,w1,w2) * gradE11(u,v,du,dv)
-                                                    - D1112(u,v) * gradE12(u,v,w1,w2) * gradE11(u,v,du,dv)
-                                                    - D1121(u,v) * gradE21(u,v,w1,w2) * gradE11(u,v,du,dv)
-                                                    - D1122(u,v) * gradE22(u,v,w1,w2) * gradE11(u,v,du,dv) + invC11(u,v) * grad2E11(w1,w2,du,dv)
-                                                    - D1211(u,v) * gradE11(u,v,w1,w2) * gradE12(u,v,du,dv)
-                                                    - D1212(u,v) * gradE12(u,v,w1,w2) * gradE12(u,v,du,dv)
-                                                    - D1221(u,v) * gradE21(u,v,w1,w2) * gradE12(u,v,du,dv)
-                                                    - D1222(u,v) * gradE22(u,v,w1,w2) * gradE12(u,v,du,dv) + invC12(u,v) * grad2E12(w1,w2,du,dv)
-                                                    - D2111(u,v) * gradE11(u,v,w1,w2) * gradE21(u,v,du,dv)
-                                                    - D2112(u,v) * gradE12(u,v,w1,w2) * gradE21(u,v,du,dv)
-                                                    - D2121(u,v) * gradE21(u,v,w1,w2) * gradE21(u,v,du,dv)
-                                                    - D2122(u,v) * gradE22(u,v,w1,w2) * gradE21(u,v,du,dv) + invC21(u,v) * grad2E21(w1,w2,du,dv)
-                                                    - D2211(u,v) * gradE11(u,v,w1,w2) * gradE22(u,v,du,dv)
-                                                    - D2212(u,v) * gradE12(u,v,w1,w2) * gradE22(u,v,du,dv)
-                                                    - D2221(u,v) * gradE21(u,v,w1,w2) * gradE22(u,v,du,dv)
-                                                    - D2222(u,v) * gradE22(u,v,w1,w2) * gradE22(u,v,du,dv) + invC22(u,v) * grad2E22(w1,w2,du,dv)
-                                                  )
-
-            + 2.0*M* (gradE11(u,v,w1,w2) * gradE11(u,v,du,dv) + E11(u,v) * grad2E11(w1,w2,du,dv) +
-                      gradE12(u,v,w1,w2) * gradE12(u,v,du,dv) + E12(u,v) * grad2E12(w1,w2,du,dv) +
-                      gradE21(u,v,w1,w2) * gradE21(u,v,du,dv) + E21(u,v) * grad2E21(w1,w2,du,dv) +
-                      gradE22(u,v,w1,w2) * gradE22(u,v,du,dv) + E22(u,v) * grad2E22(w1,w2,du,dv) )
-          );
-
-Vh [upos,vpos] = [u + eps*du, v + eps*dv];
-Vh [uneg,vneg] = [u - eps*du, v - eps*dv];
-
-varf rhs1([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(uneg,vneg)*(detF(uneg,vneg)-1.) *
-                                                     (invC11(uneg,vneg) * gradE11(uneg,vneg,w1,w2)
-                                                    + invC12(uneg,vneg) * gradE12(uneg,vneg,w1,w2)
-															                      + invC21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
-											                              + invC22(uneg,vneg) * gradE22(uneg,vneg,w1,w2))
-                                    + 2.0 * M * (E11(uneg,vneg) * gradE11(uneg,vneg,w1,w2)
-                                               + E12(uneg,vneg) * gradE12(uneg,vneg,w1,w2)
-                                               + E21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
-                                               + E22(uneg,vneg) * gradE22(uneg,vneg,w1,w2))
-                                               );
-varf rhs2([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(upos,vpos)*(detF(upos,vpos)-1.) *
-                                                    (invC11(upos,vpos) * gradE11(upos,vpos,w1,w2)
-                                                   + invC12(upos,vpos) * gradE12(upos,vpos,w1,w2)
-                                                   + invC21(upos,vpos) * gradE21(upos,vpos,w1,w2)
-                                                   + invC22(upos,vpos) * gradE22(upos,vpos,w1,w2))
-                                   + 2.0 * M * (E11(upos,vpos) * gradE11(upos,vpos,w1,w2)
-                                              + E12(upos,vpos) * gradE12(upos,vpos,w1,w2)
-                                              + E21(upos,vpos) * gradE21(upos,vpos,w1,w2)
-                                              + E22(upos,vpos) * gradE22(upos,vpos,w1,w2))
-                                              );
-
-real[int] RHS1 = rhs1(0,Vh);
-real[int] RHS2 = rhs2(0,Vh);
-RHS2 = RHS2 - RHS1;
-RHS2 = (2*eps)^(-1)*RHS2;
-real[int] JAC = Jac(0,Vh);
-for (int i=JAC.n-5; i<JAC.n; i++) cout << "RHS(i) = " << RHS2[i] << " " << "JAC(i) = " << JAC[i] << endl;
-RHS1 = RHS2 - JAC;
-cout << "||RHS - JAC||_inf = " << RHS1.linfty << endl;

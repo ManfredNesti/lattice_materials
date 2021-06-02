@@ -10,6 +10,9 @@ out << "u,nu_conv,nu_Sig" << endl;
 real ustart = 0.1, v = -0.1, ufinal = 1.0, uincr = 0.1;
 
 for (real u = ustart; u <= ufinal; u += uincr) {
+  // ***************************************************************************
+  // Parameters
+  // ***************************************************************************
   int n = 20;
   mesh Th = square(n, n);
   fespace Vh(Th, [P1, P1]);
@@ -22,6 +25,9 @@ for (real u = ustart; u <= ufinal; u += uincr) {
   Xh lambda = E * nu / (1 - nu^2);
   Xh mu = E / (2 * (1 + nu));
 
+  // ***************************************************************************
+  // Macros
+  // ***************************************************************************
   macro eps11(u, v) (dx(u)) //
   macro eps22(u, v) (dy(v)) //
   macro eps12(u, v) ((dx(v) + dy(u)) / 2) //
@@ -35,8 +41,12 @@ for (real u = ustart; u <= ufinal; u += uincr) {
   problem tensile([u1, u2], [v1, v2]) = int2d(Th) (sig11(u1, u2) * eps11(v1, v2) + sig22(u1, u2) * eps22(v1, v2) + 2 * sig12(u1, u2) * eps12(v1, v2))
                                          + on(2, u1 = u)
                                          + on(1, u2 = 0)
-                                         + on(4, u1 = 0);
+                                         + on(4, u1 = 0)
+                                        ;
 
+  // ***************************************************************************
+  // Newton initialization
+  // ***************************************************************************
   [u1old, u2old] = [1, 1];
   vold = v;
   while(err > tol) {
@@ -49,10 +59,15 @@ for (real u = ustart; u <= ufinal; u += uincr) {
    vold = v;
   }
 
+  // ***************************************************************************
+  // Movemesh
+  // ***************************************************************************
   mesh Thd = movemesh(Th, [x + coef * u1, y + coef * u2]);
   plot(Th, Thd, wait = 1, cmm = "u="+u);
 
-  // Estimate of nu using convect
+  // ***************************************************************************
+  // Estimation of nu using convect
+  // ***************************************************************************
   real d1conv = int1d(Th, 2)(u1 - convect([ax, ay], -1, u1));
   real d2conv = int1d(Th, 3)(u2 - convect([bx, by], -1, u2));
   cout << "d1conv = " << d1conv << endl;
@@ -61,7 +76,9 @@ for (real u = ustart; u <= ufinal; u += uincr) {
   real nu12conv = - d2conv / d1conv;
   cout << "Estimated nu using convect: " << nu12conv << endl;
 
+  // ***************************************************************************
   // Estimate of nu using by Sigmund formula
+  // ***************************************************************************
   real d1Sig = int1d(Th, 2)(u1) - int1d(Th, 4)(u1);
   real d2Sig = int1d(Th, 3)(u2) - int1d(Th, 1)(u2);
   cout << "d1Sig = " << d1Sig << endl;
