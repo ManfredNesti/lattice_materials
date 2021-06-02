@@ -10,6 +10,7 @@ int jj = 0;
 
 include "macros.edp"
 include "params.edp";
+include "helmholtz.edp"
 include "cost_function/J.edp";
 include "cost_function/gradJ.edp";
 include "constraints.edp";

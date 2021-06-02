@@ -1,6 +1,3 @@
-// ***************************************************************************
-// Main
-// ***************************************************************************
 load "ff-Ipopt";
 load "ffrandom";
 load "iovtk";
@@ -10,53 +7,59 @@ int jj = 0;
 
 include "macros.edp"
 include "params.edp";
-include "cost_function/J.edp";
-include "cost_function/gradJ.edp";
+include "print_params.edp";
+include "helmholtz.edp"
+include "J.edp";
+include "gradJ.edp";
 include "constraints.edp";
 
+ofstream outnu ("output_nu.csv");
+// ***************************************************************************
+// Main
+// ***************************************************************************
 include "adaptmesh/makemetrica.edp";
 
 savemesh (Th, "results/mesh_initial.msh" );
 while(stopmesh > tolmesh && ii < maxit){
+
 	jj = 0;
 
 	// Power penalty law
 	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
 	else q = qmax;
 
+
 	IPOPT(J, gradJ, ipC, ipGradC, v[],
 	  lb  = xlb[], ub  = xub[],
-	 	  clb = clb  , cub = cub  ,
+   	  clb = clb  , cub = cub  ,
 	  checkindex = 1, structjacc = [gvi,gvj],
-	    maxiter = IPOPTmaxiter + 100 * (ii == 0), warmstart = ii,
+      maxiter = IPOPTmaxiter + 100 * (ii == 0), warmstart = ii,
 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
 	  //printlevel = 1,
 	  //derivativetest="first-order");
-	    //,maxiter=10);
+      //,maxiter=10);
 	  );
 
-	// Helmholtz filter
-	if(helm && ii != maxit - 1){
-		solve helmholtz(vHelm, psi) = int2d(Th)(radius * (dx(vHelm) * dx(psi) + dy(vHelm) * dy(psi)))
-		                              + int2d(Th)(vHelm * psi)
-		                              - int2d(Th)(v * psi);
-		plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
-		plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
-		v = vHelm;
-	}
+		// Helmholtz filtering
+		if(helm && ii != maxit - 1){
+			helmholtz;
+			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+			plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+			v = vHelm;
+		}
 
-	// Mesh filter
-	if(meshad && (ii == 4 || ii == 5)){
-	  maxsK = 1;
-	  ntold = Th.nt;
-	  makemetrica(tau);
-		Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+	// Mesh adaptivity
+  if(meshad && (ii == 4 || ii == 5)){
+    maxsK = 1;
+    ntold = Th.nt;
+    makemetrica(tau);
+  	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
 		savemesh (Th, "results/meshii"+ii+".msh" );
-		plot(Th, wait = 0, cmm="New mesh");
-		cout << "maxsK = " << maxsK << endl;
-	}
+  	plot(Th, wait = 0, cmm="New mesh");
+  	cout << "maxsK = " << maxsK << endl;
+  }
 
-	// Heaviside filter
+	// Heaviside filtering
 	if(heav && ii != maxit - 1){
     plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
 		real betaH = 10*(ii < 19) + 7*(ii == 19);
@@ -65,7 +68,7 @@ while(stopmesh > tolmesh && ii < maxit){
     v = vHeav;
 	}
 
-	// Sigmund filter
+	// Sigmund filtering
 	if(sig && ii != maxit - 1){
 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
@@ -76,7 +79,7 @@ while(stopmesh > tolmesh && ii < maxit){
 			eta += 0.02;
 	}
 
-  // Mesh projection
+  // Mesh projection (only for mesh adaptivity)
   if(meshad && (ii == 4 || ii == 5)){
   	v = v;
   	xlb = xlb;
@@ -96,12 +99,18 @@ while(stopmesh > tolmesh && ii < maxit){
 
 	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
 
-	{ofstream fout("results/"+ii+"_density.txt");	fout << v[];}
-
+	{
+	ofstream fout("results/"+ii+"_density.txt");
+	fout << v[];
+	}
 	plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density.ps", cmm = "Density "+ii);
 	savevtk("results/"+ii+"_density.vtk", Th, v, dataname="Density", order=ffordervel);
+
+	outnu << nu12 << endl;
 }
 
 cout << Th.nt << endl;
 
 plot(v,  wait = 0, fill = 1, value = 1, ps = "results/final_density.ps", cmm = "Final Density");
+
+include "checknu.edp";

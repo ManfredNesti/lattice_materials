@@ -1,0 +1,36 @@
+// ***************************************************************************
+// Dual problem
+// ***************************************************************************
+dual([l1,l2], [phi1, phi2]) =
+int2d(Th) (w^q* L * (2.0*detF(u1,u2)-1.) * (dx(phi1)*F22(u1,u2) + dy(phi2)*F11(u1,u2) - dy(phi1)*F21(u1,u2) - dx(phi2)*F12(u1,u2))
+                                        * (invC11(u1,u2) * gradE11(u1,u2,l1,l2) + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
+                                        +  invC21(u1,u2) * gradE21(u1,u2,l1,l2) + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
+
+         + w^q* L * (detF(u1,u2)-1) * detF(u1,u2) * (  - D1111(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2)
+                                                       - D1112(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2)
+                                                       - D1121(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2)
+                                                       - D1122(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2) + invC11(u1,u2) * grad2E11(phi1,phi2,l1,l2)
+                                                       - D1211(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2)
+                                                       - D1212(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2)
+                                                       - D1221(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2)
+                                                       - D1222(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2) + invC12(u1,u2) * grad2E12(phi1,phi2,l1,l2)
+                                                       - D2111(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2)
+                                                       - D2112(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2)
+                                                       - D2121(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2)
+                                                       - D2122(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2) + invC21(u1,u2) * grad2E21(phi1,phi2,l1,l2)
+                                                       - D2211(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2)
+                                                       - D2212(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2)
+                                                       - D2221(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2)
+                                                       - D2222(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2) + invC22(u1,u2) * grad2E22(phi1,phi2,l1,l2)
+                                                    )
+
+          + w^q* 2.0*M* (gradE11(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2) + E11(u1,u2) * grad2E11(phi1,phi2,l1,l2) +
+                    gradE12(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2) + E12(u1,u2) * grad2E12(phi1,phi2,l1,l2) +
+                    gradE21(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2) + E21(u1,u2) * grad2E21(phi1,phi2,l1,l2) +
+                    gradE22(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2) + E22(u1,u2) * grad2E22(phi1,phi2,l1,l2) )
+         )
+         -  int1d(Th,3)(Curly * phi2)
+         + on(2,l1=0) //dirichlet
+         + on(1,l2=0) // symmetric bc
+         + on(4,l1=0) // symmetric bc
+       ;

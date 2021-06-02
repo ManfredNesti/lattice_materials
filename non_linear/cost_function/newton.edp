@@ -1,0 +1,40 @@
+// ***************************************************************************
+// Residual for Newton method
+// ***************************************************************************
+func real errorL2()
+{
+ err1[] = u1[];
+ err1[] -= u10[];
+
+ real erru = int2d(Th)(err1^2 + err2^2);
+ real normu = int2d(Th)(u10^2 + u20^2);
+ // return error estimate (stopping criterion)
+ return sqrt(erru / (normu+1e-15));
+}
+
+// ***************************************************************************
+// Newton initialization
+// ***************************************************************************
+[u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+[u1, u2] = [u10, u20]; // u_1
+real tol = 1.e-12;
+real res = 2. * tol;
+int loopcount = 0;
+int loopmax = 100;
+real alpha = 1.0;
+
+// ***************************************************************************
+// Newton loop
+// ***************************************************************************
+while (loopcount <= loopmax && res >= tol){
+    loopcount ++;
+    cout << "Newton iteration " << loopcount << endl;
+    // Solve
+    primallinearized;
+    // Update
+    u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u
+    // update error for the stopping criterion
+    res = errorL2();
+    //Update old solution
+    u10[] = u1[];
+}

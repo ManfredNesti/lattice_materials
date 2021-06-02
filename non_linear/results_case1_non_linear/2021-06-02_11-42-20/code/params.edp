@@ -118,5 +118,3 @@ real stopmesh = tolmesh + 1.;
 real tau = .00001;
 real maxsK;
 int ntold = Th.nt;
-
-include "print_params.edp";
