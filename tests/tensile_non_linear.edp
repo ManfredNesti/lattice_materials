@@ -1,0 +1,210 @@
+// https://doc.freefem.org/models/non-linear-elasticity.html
+int t = time();
+exec("mkdir results_tensile_non_linear");
+exec("mkdir results_tensile_non_linear/"+t);
+ofstream out("results_tensile_non_linear/"+t+"/tensile_non_linear.csv", append); //file per output
+
+real nl = 0.; //1 if non-linear, 0 otherwise
+// Macro
+// parte lineare di epsilon
+macro EL(u, v) [dx(u), (dx(v)+dy(u)), dy(v)] // is [epsilon_11, 2epsilon_12, epsilon_22]
+// macro EL(u, v) [EL11(u, v), 2*EL12(u, v), EL22(u, v)] //is [epsilon_11, 2epsilon_12, epsilon_22]
+macro EL11(u, v) (dx(u)) //
+macro EL12(u, v) (0.5*(dx(v)+dy(u))) //
+macro EL22(u, v) (dy(v)) //
+// parte non lineare di epsilon (con derivate)
+macro ENL(u, v) [
+    (dx(u)*dx(u) + dx(v)*dx(v))*0.5,
+    (dx(u)*dy(u) + dx(v)*dy(v)),
+    (dy(u)*dy(u) + dy(v)*dy(v))*0.5
+    ] //
+// macro ENL(u, v) [
+//     ENL11(u,v),
+//     2*ENL12(u,v),
+//     ENL22(u,v)
+    // ] //
+macro ENL11(u,v) ((dx(u)*dx(u) + dx(v)*dx(v))*0.5) //
+macro ENL12(u,v) ((dx(u)*dy(u) + dx(v)*dy(v))*0.5) //
+macro ENL22(u,v) ((dy(u)*dy(u) + dy(v)*dy(v))*0.5) //
+macro dENL(u, v, uu, vv) [
+    (dx(u)*dx(uu) + dx(v)*dx(vv)),
+    (dx(u)*dy(uu) + dx(v)*dy(vv) + dx(uu)*dy(u) + dx(vv)*dy(v)),
+    (dy(u)*dy(uu) + dy(v)*dy(vv))
+    ] //
+// epsilon (lineare + non lineare) (con derivate)
+macro E(u, v) (EL(u,v) + nl * ENL(u,v)) //is [E_11, 2E_12, E_22]
+macro E11(u, v) (EL11(u,v) + nl * ENL11(u,v)) //
+macro E12(u, v) (EL12(u,v) + nl * ENL12(u,v)) //
+macro E22(u, v) (EL22(u,v) + nl * ENL22(u,v)) //
+
+macro dE(u, v, uu, vv) (EL(uu, vv) + nl* dENL(u, v, uu, vv)) //
+macro ddE(u, v, uu, vv, uuu, vvv) (nl * dENL(uuu, vvv, uu, vv)) //
+// energia F2: A(E,E) = E' * A * E (con derivate)
+macro F2(u, v) (E(u, v)'*A*E(u, v)) //
+macro dF2(u, v, uu, vv) (E(u, v)'*A*dE(u, v, uu, vv)*2.) //
+macro ddF2(u, v, uu, vv, uuu, vvv) (
+      (dE(u, v, uu, vv)'*A*dE(u, v, uuu, vvv))*2.
+    + (E(u, v)'*A*ddE(u, v, uu, vv, uuu, vvv))*2.
+    ) //
+// f funzione di F2 (sceglie 0.25 * u^2 ovvero 0.25 * F2^2)
+// macro f(u) ((u)*(u)*0.25) //
+// macro df(u) ((u)*0.5) //
+// macro ddf(u) (0.5) //
+// f lineare: f = energia = u
+macro f(u) (u) //
+macro df(u) (1.0) //
+macro ddf(u) (0.) //
+
+//sigma = 2 mu E + lambda tr(E) Id
+macro trE(u,v) (E11(u,v) + E22(u,v)) //
+macro sigma11(u,v) (2*mu*E11(u,v) + lambda*trE(u,v)) //
+macro sigma12(u,v) (2*mu*E12(u,v)) //
+macro sigma22(u,v) (2*mu*E22(u,v) + lambda*trE(u,v)) //
+
+// Parameters
+real q = 4.; //power for pensalty method
+real  vold;
+real Pa = 0; //no forces
+
+real nu = 0.3;
+real Ecoeff = 1.;
+real lambda = Ecoeff*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
+real mu = Ecoeff/(2*(1+nu));
+// real mu = 0.012e5; //kg/cm^2
+// real lambda = 0.4e5; //kg/cm^2
+real coef = 0.1;
+real  u = 1.,  v = -0.1; //traction bc
+// Mesh & Fespace
+
+mesh   Th = square(20,20);
+fespace Xh(Th,P1);
+fespace Xhp(Th, P1,       periodic = [[2,y],[4,y],[1,x],[3,x]]); //fespace for density (need to be periodic?)
+Xhp rho;
+rho = 1; ///set density equal to 1 where rho in fespace
+
+//for evalutaion of F2 and its derivatives
+fespace Wh(Th, P1dc); //spazio discontinuo perchè?
+Wh e2, fe2, dfe2, ddfe2;
+
+fespace Vh(Th, [P1, P1]);
+Vh
+[uu, vv] = [0, 0], // soluzione di NonLin (du, dv) (iterazione precedente)
+[w, s], // funzioni test
+[un, vn] = [u*(x>=1), 0]; // spostamento (un, vn) (iterazione attuale)
+// update: (un, vn) =- (du, dv)
+
+fespace Sh(Th, P1);
+Sh
+u1, v1; // copia dell'iterazione precedente INUTILE
+
+// Matrice A
+real a11 = 2*mu + lambda;
+real a22 = mu; //because [0, 2*t12, 0]' A [0, 2*s12,0] = 2*mu*(t12*s12 + t21*s21) = 4*mu*t12*s12
+real a33 = 2*mu + lambda;
+real a12 = 0;
+real a13 = lambda;
+real a23 = 0;
+// symetric part
+real a21 = a12;
+real a31 = a13;
+real a32 = a23;
+
+//the matrix A
+func A = [[a11, a12, a13], [a21, a22, a23], [a31, a32, a33]];
+
+
+// Problem
+// matrice di massa per il residuo
+varf vmass ([uu, vv], [w, s], solver=CG) = int2d(Th)(uu*w + vv*s);
+matrix M = vmass(Vh, Vh);
+// problema non lineare: // D^2 J(un, vn) * ((w,s),(du,dv)) = DJ(un, vn) (w,s)
+problem NonLin([uu, vv], [w, s], solver=LU)
+    // D^2 J(un, vn) * ((w,s),(du,dv))
+    = int2d(Th, qforder=1)(rho^q*(dF2(un, vn, uu, vv)*dF2(un, vn, w, s)*ddfe2
+                           + ddF2(un, vn, uu, vv, w, s)*dfe2) //correzione bug -> non va con f=u^2, sì con f=u
+    )
+    // - DJ(un, vn) (w,s)
+    - int1d(Th, 3)(
+          Pa*s
+    )
+    - int2d(Th, qforder=1)(
+          rho^q*dF2(un, vn, w, s)*dfe2
+    )
+    // BCs
+    + on(2,uu=0) //dirichlet?
+    + on(1,vv=0) // symmetric bc
+    + on(4,uu=0) // symmetric bc
+    ;
+
+// Newton's method
+for (int i = 0; i < 10; i++){
+    cout << "Loop " << i << endl;
+
+    // Update
+    e2 = F2(un, vn);
+    dfe2 = df(e2) ; // entra in NonLin
+    ddfe2 = ddf(e2); // entra in NonLin
+    cout << "e2 max = " <<e2[].max << ", min = " << e2[].min << endl;
+    cout << "de2 max = "<< dfe2[].max << ", min = " << dfe2[].min << endl;
+    cout << "dde2 max = "<< ddfe2[].max << ", min = " << ddfe2[].min << endl;
+
+    // Solve
+    NonLin;
+    w[]  = M*uu[];
+
+    // Residual
+    real res = sqrt(w[]' * uu[]); //L^2 norm of [uu, vv]
+    cout << " L^2 residual = " << res << endl;
+
+    // Update
+    v1 = vv;
+    u1 = uu;
+    cout << "u1 min = " <<u1[].min << ", u1 max = " << u1[].max << endl;
+    cout << "v1 min = " <<v1[].min << ", v2 max = " << v1[].max << endl;
+
+    // Plot
+    // plot([uu, vv], wait=true, cmm="uu, vv");
+
+    // Update
+    un[] -= uu[];
+    // plot([un, vn], wait=true, cmm="displacement");
+
+    if (res < 1e-5) break;
+}
+
+// Plot
+plot([un, vn], wait=true);
+plot(un,fill=1,dim=3,wait = 1, cmm="u1");
+plot(vn,fill=1,dim=3,wait = 1, cmm="u2");
+
+// Movemesh
+real minarea = checkmovemesh(Th, [x+coef*un, y+coef*vn]);
+if (minarea > 0) { //movemesh will be ok
+  mesh th1 = movemesh(Th, [x+coef*un, y+coef*vn]);
+  plot(th1, wait=true);
+  plot(Th, th1, wait=true);
+}
+
+cout << " --- ERROR --- Min area = " << minarea << endl;
+
+// Plot
+
+//estimated nu
+real d1 = int1d(Th,2)(un) - int1d(Th,4)(un);
+real d2 = int1d(Th,3)(vn) - int1d(Th,1)(vn);;
+cout << "d1 = " << d1 << endl;
+cout << "d2 = " << d2 << endl;
+real nu12 = -d2/d1;
+cout << "estimated nu = " << nu12 << endl;
+
+//output
+//epsilon11,epsilon12,epsilon22,sigma11,sigma12,sigma22,nu12,nl(=1 se non lineare, 0 lineare)
+out << int2d(Th) (rho*E11(un,vn)) << ",";
+out << int2d(Th) (rho*E12(un,vn)) << ",";
+out << int2d(Th) (rho*E22(un,vn)) << ",";
+out << int2d(Th) (rho*sigma11(un,vn)) << ",";
+out << int2d(Th) (rho*sigma12(un,vn)) << ",";
+out << int2d(Th) (rho*sigma22(un,vn)) << ",";
+out << nu12 << ",";
+out << nl << ",";
+out << endl;

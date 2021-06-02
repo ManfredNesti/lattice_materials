@@ -1,0 +1,72 @@
+exec("mkdir tensile_linear");
+exec("rm tensile_linear.csv");
+exec("touch tensile_linear.csv");
+
+ofstream out("tensile_linear.csv", append);
+out << "u,nu_conv,nu_Sig" << endl;
+
+real nu = 0.3;
+real u = 0.05, v = -0.1, ufinal = 1.0, uincr = 0.05;
+real vold;
+
+for (u = 0.05; u < ufinal; u += uincr) {
+  int n = 20;
+  mesh Th = square(n, n);
+  fespace Vh(Th, [P1, P1]);
+  Vh [u1, u2], [v1, v2], [u1old, u2old];
+  fespace Xh(Th, P1);
+  Xh  ax = 1, ay = 0, bx = 0, by = 1;
+  Xh  E = 0.0072; // +sin(5*pi*x)^2;
+  Xh lambda = E * nu / (1 - nu^2);
+  Xh mu = E / (2 * (1 + nu));
+
+  macro eps11(u, v) (dx(u)) //
+  macro eps22(u, v) (dy(v)) //
+  macro eps12(u, v) ((dx(v) + dy(u)) / 2) //
+  macro trace(u, v) (dx(u) + dy(v)) //
+  macro sig11(u, v) (2 * mu * eps11(u, v) + lambda * trace(u, v)) //
+  macro sig22(u, v) (2 * mu * eps22(u, v) + lambda * trace(u, v)) //
+  macro sig12(u, v) (2 * mu * eps12(u, v)) //
+
+  real tol = 1e-4, err = 1+tol, gamma = 1e6, coef = 0.1;
+
+  problem tensile([u1, u2], [v1, v2]) = int2d(Th) (sig11(u1, u2) * eps11(v1, v2) + sig22(u1, u2) * eps22(v1, v2) + 2 * sig12(u1, u2) * eps12(v1, v2))
+                                         + on(2, u1 = u)
+                                         + on(1, u2 = 0)
+                                         + on(4, u1 = 0);
+
+  [u1old, u2old] = [1, 1];
+  vold = v;
+  while(err > tol) {
+   tensile;
+   v = v + 1e-6 * int1d(Th, 3) (u2 - convect([bx, by], -1, u2) - v);
+   cout << "v = " << v << endl;
+   err = sqrt(int2d(Th) ((u1 - u1old)^2 + (u2 - u2old)^2)) + 0 * abs(v - vold);
+   cout << "err = " << err << endl;
+   [u1old, u2old] = [u1, u2];
+   vold = v;
+  }
+
+  mesh Thd = movemesh(Th, [x + coef * u1, y + coef * u2]);
+  plot(Th, Thd, wait = 1, cmm = "u="+u);
+
+  // Estimate of nu using convect
+  real d1conv = int1d(Th, 2)(u1 - convect([ax, ay], -1, u1));
+  real d2conv = int1d(Th, 3)(u2 - convect([bx, by], -1, u2));
+  cout << "d1conv = " << d1conv << endl;
+  cout << "d2conv = " << d2conv << endl;
+
+  real nu12conv = - d2conv / d1conv;
+  cout << "Estimated nu using convect: " << nu12conv << endl;
+
+  // Estimate of nu using by Sigmund formula
+  real d1Sig = int1d(Th, 2)(u1) - int1d(Th, 4)(u1);
+  real d2Sig = int1d(Th, 3)(u2) - int1d(Th, 1)(u2);
+  cout << "d1Sig = " << d1Sig << endl;
+  cout << "d2Sig = " << d2Sig << endl;
+
+  real nu12Sig = - d2Sig / d1Sig;
+  cout << "Estimated nu by Sigmund formula: " << nu12Sig << endl;
+
+  out << int2d(Th) (eps11(u1, u2)) << "," << nu12conv << "," << nu12Sig << endl;
+}
