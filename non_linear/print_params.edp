@@ -60,8 +60,10 @@ if(meshad){
 cout << "-----" << endl;
 
 cout << "Sigmund filtering: " << sig <<  endl;
-cout << "beta: " << beta << endl;
-cout << "eta fixed: " << eta << endl;
+cout << "beta start: " << beta0 << endl;
+cout << "eta start: " << eta0 << endl;
+cout << "beta increment: " << betaincr << endl;
+cout << "eta increment: " << etaincr << endl;
 
 cout << "-----" << endl;
 
