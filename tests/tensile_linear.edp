@@ -1,3 +1,6 @@
+// ***************************************************************************
+// Tensile linear
+// ***************************************************************************
 exec("mkdir tensile_linear");
 exec("rm tensile_linear.csv");
 exec("touch tensile_linear.csv");
@@ -5,15 +8,15 @@ exec("touch tensile_linear.csv");
 ofstream out("tensile_linear.csv", append);
 out << "u,nu_conv,nu_Sig" << endl;
 
-real nu = 0.3;
-real u = 0.05, v = -0.1, ufinal = 1.0, uincr = 0.05;
-real vold;
+real ustart = 0.1, v = -0.1, ufinal = 1.0, uincr = 0.1;
 
-for (u = 0.05; u < ufinal; u += uincr) {
+for (real u = ustart; u <= ufinal; u += uincr) {
   int n = 20;
   mesh Th = square(n, n);
   fespace Vh(Th, [P1, P1]);
   Vh [u1, u2], [v1, v2], [u1old, u2old];
+  real nu = 0.3;
+  real vold;
   fespace Xh(Th, P1);
   Xh  ax = 1, ay = 0, bx = 0, by = 1;
   Xh  E = 0.0072; // +sin(5*pi*x)^2;
@@ -68,5 +71,5 @@ for (u = 0.05; u < ufinal; u += uincr) {
   real nu12Sig = - d2Sig / d1Sig;
   cout << "Estimated nu by Sigmund formula: " << nu12Sig << endl;
 
-  out << int2d(Th) (eps11(u1, u2)) << "," << nu12conv << "," << nu12Sig << endl;
+  out << u << "," << nu12conv << "," << nu12Sig << endl;
 }
