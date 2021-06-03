@@ -34,22 +34,22 @@ macro invC21(u1,u2) (1/detC(u1,u2) * ((-1)* C21(u1,u2))) //
 macro invC22(u1,u2) (1/detC(u1,u2) * (C11(u1,u2))) //
 // Second Piola-Kirchhoff stress tensor for Phi4 Sij
 // Dijkl = - d(Cij^-1)/dEkl
-macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2 ) //
-macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 ) // = D1121, D1112, D2111 for symmetry of C,invC and E
-macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2 ) // = D2211
-macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2 ) //
+macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2) //
+macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2) // = D1121, D1112, D2111 for symmetry of C,invC and E
+macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2) //
+macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2) //
+macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2) //
+macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2) // = D2211
+macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2) //
 macro D1212(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) // = D2121, D1221, D2112
 macro D2121(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
 macro D1221(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
 macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
-macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
+macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2) // = D2212, D2221, D1222
+macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2) //
+macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2) //
+macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2) //
+macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2) //
 //dEij(u1,u2)/du * lambda
 macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
 macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
