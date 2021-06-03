@@ -87,6 +87,15 @@ if (ld) {
   plot(v, fill = 1, cmm="Initial density", wait=0);
 }
 
+// Newton tensile_non_linear_KS_newton_convergence
+int newtonconv = 0;
+if (newtonconv){
+  exec("rm tensile_non_linear_KS_newton_convergence.csv");
+  exec("touch tensile_non_linear_KS_newton_convergence.csv");
+  ofstream outconv("tensile_non_linear_KS_newton_convergence", append);
+  outconv << "L2_error" << endl;
+}
+
 // Power penalty
 int pen = 0;
 real q = 3.;

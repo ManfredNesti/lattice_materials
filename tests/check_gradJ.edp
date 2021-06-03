@@ -1,112 +1,47 @@
-// Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
-int[int] ffordervel = [1];
+// ***************************************************************************
+// Check of gradient of J
+// ***************************************************************************
+exec("rm check_gradJ.txt");
+exec("touch check_gradJ.txt");
+ofstream out("check_gradJ.txt", append);
+
 int ii = 0;
-
 int jj = 0;
-real eta = 0.4;
-int sig = 1;
-real beta = 4.;
 
-// Macro
-//Gradient of a vector field (u1, u2)
-macro grad11(u1, u2) (dx(u1)) //
-macro grad12(u1, u2) (dy(u1)) //
-macro grad21(u1, u2) (dx(u2)) //
-macro grad22(u1, u2) (dy(u2)) //
+include "../non_linear/macros.edp";
 
-//Deformation gradient F
-macro F11(u1,u2) (1.0 + grad11(u1,u2)) //
-macro F12(u1,u2) (0.0 + grad12(u1,u2)) //
-macro F21(u1,u2) (0.0 + grad21(u1,u2)) //
-macro F22(u1,u2) (1.0 + grad22(u1,u2)) //
-
-// Components Green-Lagrange strain tensor E
-macro E11(u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
-macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
-macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
-macro E22(u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
-
-macro traceE(u1,u2)	(E11(u1,u2) + E22(u1,u2)) // Trace of Green-Lagrange tensor
-
-macro detF(u1,u2) (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )  //J determinant of F
-
-//Right Cauchy-Green deformation tensor C
-macro C11(u1,u2) (2*E11(u1,u2) + 1.0) //
-macro C12(u1,u2) (2*E12(u1,u2)) //
-macro C21(u1,u2) (2*E21(u1,u2)) //
-macro C22(u1,u2) (2*E22(u1,u2) + 1.0) //
-
-macro detC(u1,u2) (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2)) // determinantof C
-
-//Inverse of C: C^-1 (symmetric)
-macro invC11(u1,u2) (1/detC(u1,u2) * (C22(u1,u2))) //
-macro invC12(u1,u2) (1/detC(u1,u2) * ((-1)* C12(u1,u2))) //
-macro invC21(u1,u2) (1/detC(u1,u2) * ((-1)* C21(u1,u2))) //
-macro invC22(u1,u2) (1/detC(u1,u2) * (C11(u1,u2))) //
-
-// Second Piola-Kirchhoff stress tensor for Phi4 Sij forse non serve ...
-
-// Dijkl = - d(Cij^-1)/dEkl !!! verificata abbastanza ... anche il meno
-macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2 ) //
-macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 ) // = D1121, D1112, D2111 for symmetry of C,invC and E
-macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2 ) // = D2211
-macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1212(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) // = D2121, D1221, D2112
-macro D2121(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D1221(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
-macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
-macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
-macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
-macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
-
-//dEij(u1,u2)/du * lambda
-macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
-macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
-macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
-macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2)) //
-
-//d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (this is the test function)
-macro grad2E11 (phi1,phi2,l1,l2) (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2)) //
-macro grad2E12 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
-macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
-macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
-
+// ***************************************************************************
 // Parameters
-real q = 4.; //power for penalty method
+// ***************************************************************************
+real q = 4.;
 
 real nu = 0.3;
 real E = 1.;
-real L = E*nu/(1-nu^2); //E*nu/(1+nu)/(1-2*nu); HO TENUTO QUELLO SBAGLIATO
-real M = E/(2*(1+nu));
-real d1 = 1.; //u traction given
+real L = E * nu / (1 - nu^2);
+real M = E / (2 * (1 + nu));
+
+real d1 = 1.;
 real nutarget = 0.3;
 real nu12;
 real eps = 1e-4;
 
-mesh   Th = square(30,30);
-//density space
-fespace Xh(Th,P1);
+int n = 30;
+mesh Th = square(n, n);
+
 fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
-Xhp rho, drho, wSig;
-Xhp xlb = 1e-4, xub = 1; // lower and upper bounds
-rho = abs(5+sin(2*pi*x*0.25)*sin(2*pi*y*0.5));
-drho = abs(5+cos(2*pi*x*0.25)*cos(2*pi*y*0.5));
-Xhp rhopos = rho + eps*drho;
-Xhp rhoneg = rho - eps*drho;
+Xhp rho, drho, xlb = 1e-4, xub = 1; // lower and upper bounds
+rho = abs(5 + sin(2 * pi * x * 0.25) * sin(2 * pi * y * 0.5));
+drho = abs(5 + cos(2 * pi * x * 0.25) * cos(2 * pi * y * 0.5));
+Xhp rhopos = rho + eps * drho;
+Xhp rhoneg = rho - eps * drho;
 
-//displacement space
 fespace Vh(Th, [P1, P1]);
-Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2], //displacement, du, test displacement
-   [l1, l2], [phi1, phi2];
+Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2],    [l1, l2], [phi1, phi2];
 
-// residual Newton method
-func real errorL2()
-{
+// ***************************************************************************
+// Residual for Newton method
+// ***************************************************************************
+func real errorL2() {
  // store increments
  err1[] = u1[];
  err1[] -= u10[];
@@ -115,191 +50,84 @@ func real errorL2()
  real normu = int2d(Th)(u10^2 + u20^2);
  // return error estimate (stopping criterion)
  return sqrt(erru / (normu+1e-15));
-
 }
 
-// Functional = 1/2 * (delta Target)^2
-func real J(real[int] & v)
-{
-  Xhp w; //density
-  w[] = v;
-
-  // FILTER
-  plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
-  eta = 0.4;
-  // Sigmund filtering
-	if(sig){
-		//beta = 2. * beta;
-		wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
-                   / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-		w = wSig;
-	}
-  plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
-  // END FILTER
-
-  cout << "Solving primal problems..." << endl;
-  //Newton method for primal
-  problem primallinearized([varu1,varu2], [psi1, psi2]) =
-  int2d(Th) (w^q * L * (2.0*detF(u10,u20)-1.) * (dx(psi1)*F22(u10,u20) + dy(psi2)*F11(u10,u20) - dy(psi1)*F21(u10,u20) - dx(psi2)*F12(u10,u20))
-                                        * (invC11(u10,u20) * gradE11(u10,u20,varu1,varu2) + invC12(u10,u20) * gradE12(u10,u20,varu1,varu2)
-                                        +  invC21(u10,u20) * gradE21(u10,u20,varu1,varu2) + invC22(u10,u20) * gradE22(u10,u20,varu1,varu2))
-
-           + w^q * L * (detF(u10,u20)-1) * detF(u10,u20) * ( - D1111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2)
-                                                       - D1122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + invC11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2)
-                                                       - D1211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2)
-                                                       - D1222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + invC12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2)
-                                                       - D2111(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2112(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2121(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2)
-                                                       - D2122(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + invC21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2)
-                                                       - D2211(u10,u20) * gradE11(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2212(u10,u20) * gradE12(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2221(u10,u20) * gradE21(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2)
-                                                       - D2222(u10,u20) * gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + invC22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2)
-                                                   )
-
-            + w^q * 2.0*M* (gradE11(u10,u20,psi1,psi2) * gradE11(u10,u20,varu1,varu2) + E11(u10,u20) * grad2E11(psi1,psi2,varu1,varu2) +
-                            gradE12(u10,u20,psi1,psi2) * gradE12(u10,u20,varu1,varu2) + E12(u10,u20) * grad2E12(psi1,psi2,varu1,varu2) +
-                            gradE21(u10,u20,psi1,psi2) * gradE21(u10,u20,varu1,varu2) + E21(u10,u20) * grad2E21(psi1,psi2,varu1,varu2) +
-                            gradE22(u10,u20,psi1,psi2) * gradE22(u10,u20,varu1,varu2) + E22(u10,u20) * grad2E22(psi1,psi2,varu1,varu2) )
-           )
-
-    + int2d(Th) (w^q * L*detF(u10,u20)*(detF(u10,u20)-1.) * (invC11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                                                           + invC12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-                                                           + invC21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-                                                           + invC22(u10,u20) * gradE22(u10,u20,psi1,psi2))
-                + w^q * 2.0 * M * (E11(u10,u20) * gradE11(u10,u20,psi1,psi2)
-                                 + E12(u10,u20) * gradE12(u10,u20,psi1,psi2)
-                                 + E21(u10,u20) * gradE21(u10,u20,psi1,psi2)
-                                 + E22(u10,u20) * gradE22(u10,u20,psi1,psi2)))
-    + on(2,varu1=0) // dirichlet
-    + on(1,varu2=0) // symmetric bc
-    + on(4,varu1=0) // symmetric bc
-  ;
-
-  //Initialization:
-  [u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet
-  [u1, u2] = [u10, u20]; // u_1
-  real tol = 1.e-3;
-  real res = 2. * tol;
-  int loopcount = 0;
-  int loopmax = 100;
-  real alpha = 1.0;
-
-  // Iterations
-  while (loopcount <= loopmax && res >= tol){
-      loopcount ++;
-      cout << "Loop " << loopcount << endl;
-
-      // Solve
-      primallinearized;
-      // Update
-      u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u (- se trovassimo - delta u)
-      // update err for the stopping criterion
-      res = errorL2();
-      //Update old solution
-      u10[] = u1[];
-
-      // Plot
-      plot([u1,u2], cmm="displacement");
-  }
-
-  real d2 = int1d(Th,3)(u2);
-  nu12 = - d2 / d1; //estimated nu
-
-  jj = jj + 1;
-
-  return 0.5 * (nu12 - nutarget)^2;
-}
-
-// Gradient of the functional (approccio lagrangiano)
-func real[int] gradJ(real[int] & v)
-{
+// ***************************************************************************
+// Functional J = 1/2 * (delta Target)^2
+// ***************************************************************************
+func real J(real[int] & v) {
   Xhp w;
   w[] = v;
-  // FILTER
-  eta = 0.4;
-  // Sigmund filtering
-	if(sig){
-		//beta = 2. * beta;
-		wSig = (1-xlb)*(tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
-                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
-		w = wSig;
-	}
-  // call to J
+  plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
+
+  out << "*********************************************" << endl;
+  out << "PRIMAL PROBLEM ..." << endl;
+  include "../non_linear/cost_function/primal.edp";
+  include "../non_linear/cost_function/newton.edp";
+
+  real d2 = int1d(Th,3)(u2);
+	nu12 = - d2 / d1; // estimated nu
+
+  out << "POISSON'S RATIO = " << nu12 << endl;
+  out << "*********************************************" << endl;
+
+	return 0.5 * (nu12 - nutarget)^2;
+}
+
+// ***************************************************************************
+// Gradient of the functional (lagrangian approach)
+// ***************************************************************************
+func real[int] gradJ(real[int] & v) {
+  Xhp w;
+  w[] = v;
   J(w[]);
-  // END FILTER
 
   real [int] dJ(Xhp.ndof);
-
-  real Curly = (nu12 - nutarget) / d1 ;
-
-  cout << "Solving dual problems..." << endl;
-
-  solve dual([l1,l2], [phi1, phi2]) =
-  int2d(Th) (w^q* L * (2.0*detF(u1,u2)-1.) * (dx(phi1)*F22(u1,u2) + dy(phi2)*F11(u1,u2) - dy(phi1)*F21(u1,u2) - dx(phi2)*F12(u1,u2))
-                        * (invC11(u1,u2) * gradE11(u1,u2,l1,l2) + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
-                        +  invC21(u1,u2) * gradE21(u1,u2,l1,l2) + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
-
-           + w^q* L * (detF(u1,u2)-1) * detF(u1,u2) * (  - D1111(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2)
-                                                         - D1112(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2)
-                                                         - D1121(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2)
-                                                         - D1122(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2) + invC11(u1,u2) * grad2E11(phi1,phi2,l1,l2)
-                                                         - D1211(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2)
-                                                         - D1212(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2)
-                                                         - D1221(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2)
-                                                         - D1222(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2) + invC12(u1,u2) * grad2E12(phi1,phi2,l1,l2)
-                                                         - D2111(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2)
-                                                         - D2112(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2)
-                                                         - D2121(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2)
-                                                         - D2122(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2) + invC21(u1,u2) * grad2E21(phi1,phi2,l1,l2)
-                                                         - D2211(u1,u2) * gradE11(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2)
-                                                         - D2212(u1,u2) * gradE12(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2)
-                                                         - D2221(u1,u2) * gradE21(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2)
-                                                         - D2222(u1,u2) * gradE22(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2) + invC22(u1,u2) * grad2E22(phi1,phi2,l1,l2)
-                                                      )
-
-             + w^q* 2.0*M* (gradE11(u1,u2,phi1,phi2) * gradE11(u1,u2,l1,l2) + E11(u1,u2) * grad2E11(phi1,phi2,l1,l2) +
-                            gradE12(u1,u2,phi1,phi2) * gradE12(u1,u2,l1,l2) + E12(u1,u2) * grad2E12(phi1,phi2,l1,l2) +
-                            gradE21(u1,u2,phi1,phi2) * gradE21(u1,u2,l1,l2) + E21(u1,u2) * grad2E21(phi1,phi2,l1,l2) +
-                            gradE22(u1,u2,phi1,phi2) * gradE22(u1,u2,l1,l2) + E22(u1,u2) * grad2E22(phi1,phi2,l1,l2) )
-           )
-           - int1d(Th,3)(Curly * phi2)
-           + on(2,l1=0) //dirichlet
-           + on(1,l2=0) // symmetric bc
-           + on(4,l1=0) // symmetric bc
-         ;
+	real Curly = (nu12 - nutarget) / d1 ;
+  out << "*********************************************" << endl;
+  out << "DUAL PROBLEM ..." << endl;
+  include "../non_linear/cost_function/dual.edp";
+  dual;
 
   varf gradient(SS, psi) =
-      int2d(Th) (q*w^(q-1)*psi*  L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
-                                                                 + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
-                                                                 + invC21(u1,u2) * gradE21(u1,u2,l1,l2)
-                                                                 + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
-               + q*w^(q-1)*psi* 2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
-                                         + E12(u1,u2) * gradE12(u1,u2,l1,l2)
-                                         + E21(u1,u2) * gradE21(u1,u2,l1,l2)
-                                         + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
-                  ;
+      int2d(Th) (q*w^(q-1) * psi *
+                                     L*detF(u1,u2)*(detF(u1,u2)-1.) * (invC11(u1,u2) * gradE11(u1,u2,l1,l2)
+          			                                                     + invC12(u1,u2) * gradE12(u1,u2,l1,l2)
+          			          																					 + invC21(u1,u2) * gradE21(u1,u2,l1,l2)
+          			          																					 + invC22(u1,u2) * gradE22(u1,u2,l1,l2))
+
+       				 + q*w^(q-1) * psi *
+                                2.0 * M * (E11(u1,u2) * gradE11(u1,u2,l1,l2)
+        			                           + E12(u1,u2) * gradE12(u1,u2,l1,l2)
+        			    				               + E21(u1,u2) * gradE21(u1,u2,l1,l2)
+        			                           + E22(u1,u2) * gradE22(u1,u2,l1,l2)))
+      ;
+
   dJ = gradient(0, Xhp);
+  out << "jj = " << jj << endl;
+  out << "DUAL PROBLEM: done!" << endl;
+  out << "*********************************************" << endl;
+  jj += 1;
+
   return dJ;
 }
 
-// Check gradJ
-real J2 = J(rhopos[]);
+out << "--- Check gradient of J ---" << endl;
 real J1 = J(rhoneg[]);
-
-cout << "Solving primal problem" << endl;
-
-real JJ = J(rho[]); //calling J->solve primal -> find [u1,u2] corresponding to rho
-
-real[int] gradientJ = gradJ(rho[]);
+real J2 = J(rhopos[]);
+real JJ = J(rho[]); // calling J -> solve primal -> find [u1,u2] corresponding to rh
+out << " J1 = " << J1 << endl;
+out << " J2 = " << J2 << endl;
+out << " JJ = " << JJ << endl;
 
 J2 = J2 - J1;
+out << " J2 - J1 = " << J2 << endl;
 J2 = (2*eps)^(-1)*J2;
-real dJ = gradientJ '* drho[] ;
+out << " (J2 - J1) / (2 * eps) = " << J2 << endl << endl;
+
+real[int] gradientJ = gradJ(rho[]);
+out << " gradJ = " << gradientJ << endl;
+real dJ = gradientJ '* drho[];
+out << " dJ = gradientJ '* drho = " << dJ << endl;
 J1 = J2 - dJ;
-cout << " diff = " << J1 << endl;
+out << " Difference (J2 - J1) / (2 * eps) - dJ = " << J1 << endl;

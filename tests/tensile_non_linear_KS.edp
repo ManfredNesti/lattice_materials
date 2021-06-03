@@ -3,9 +3,10 @@
 // from work of Klarbring and Strömberg (2013)
 // ***************************************************************************
 exec("mkdir tensile_non_linear_KS");
+
 include "../non_linear/macros.edp";
 
-real d1start = 1.0, // 1: non linear, 0: linear
+real d1start = 1.0,
      d1final = 0.01,
      d1factor = 2.;
 
@@ -23,7 +24,6 @@ for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
   // ***************************************************************************
   // Parameters
   // ***************************************************************************
-  real vold;
   real coef = 0.1;
   real q = 4.;
   real nu = 0.3;
@@ -31,19 +31,20 @@ for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
   real L = E * nu / (1 - nu^2);
   real M = E / (2 * (1 + nu));
 
-  // Mesh & Fespace
-  mesh   Th = square(20, 20);
+  int n = 20;
+  mesh Th = square(n, n);
   fespace Xh(Th, P1);
   real rho = 1;
   real w = 1;
 
-  //displacement space
   fespace Vh(Th, [P1, P1]);
-  Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2],
-     [u,v], [du,dv]; // var for check newton
+  Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2], [u,v], [du,dv];
 
   include "../non_linear/cost_function/primal.edp";
 
+  // ***************************************************************************
+  // Residual for Newton method
+  // ***************************************************************************
   func real errorL2()
   {
    err1[] = u1[];
