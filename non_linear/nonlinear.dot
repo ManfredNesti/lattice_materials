@@ -1,0 +1,23 @@
+digraph G {
+  edge [style = dashed]
+  "run.sh" -> "main.edp"
+  edge[style = normal]
+  "main.edp" -> "constraints.edp";
+  "main.edp" -> "params.edp";
+  "params.edp" -> "print_params.edp";
+  "main.edp" -> "macros.edp";
+  "main.edp" -> "J.edp";
+  "main.edp" -> "gradJ.edp";
+  "main.edp" -> "makemetrica.edp";
+  subgraph cluster_adaptmesh {
+    label = "adaptmesh"
+    "makemetrica.edp" -> "sparse2full.edp";
+    "makemetrica.edp" -> "makepatch.edp";
+  }
+  subgraph cluster_cost_function {
+    label = "cost_function"
+    "J.edp" -> "primal.edp";
+    "J.edp" -> "newton.edp";
+    "gradJ.edp" -> "dual.edp";
+  }
+}
