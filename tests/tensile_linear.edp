@@ -39,9 +39,9 @@ for (real u = ustart; u <= ufinal; u += uincr) {
   real tol = 1e-4, err = 1+tol, gamma = 1e6, coef = 0.1;
 
   problem tensile([u1, u2], [v1, v2]) = int2d(Th) (sig11(u1, u2) * eps11(v1, v2) + sig22(u1, u2) * eps22(v1, v2) + 2 * sig12(u1, u2) * eps12(v1, v2))
-                                         + on(2, u1 = u)
-                                         + on(1, u2 = 0)
-                                         + on(4, u1 = 0)
+                                         + on(2, u1 = u) //right traction
+                                         + on(1, u2 = 0) //symmetry bc
+                                         + on(4, u1 = 0) //symmetry bc
                                         ;
 
   // ***************************************************************************
