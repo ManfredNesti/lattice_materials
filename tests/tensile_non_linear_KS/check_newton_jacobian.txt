@@ -1,0 +1,56 @@
+--- Check Newton jacobian for d1 = 1 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
+--- Check Newton jacobian for d1 = 0.5 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
+--- Check Newton jacobian for d1 = 0.25 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
+--- Check Newton jacobian for d1 = 0.125 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
+--- Check Newton jacobian for d1 = 0.0625 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
+--- Check Newton jacobian for d1 = 0.03125 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
+--- Check Newton jacobian for d1 = 0.015625 ---
+RHS(i) = -0.428071 JAC(i) = -0.428071
+RHS(i) = -0.208442 JAC(i) = -0.208442
+RHS(i) = -0.260909 JAC(i) = -0.260909
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+RHS(i) = -0.0682082 JAC(i) = -0.0682082
+||RHS - JAC||_inf = 9.09059e-08
+
