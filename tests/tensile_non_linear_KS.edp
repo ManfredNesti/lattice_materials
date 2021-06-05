@@ -19,11 +19,6 @@ exec("rm tensile_non_linear_KS/check_newton_jacobian.txt");
 exec("touch tensile_non_linear_KS/check_newton_jacobian.txt");
 ofstream outjac("tensile_non_linear_KS/check_newton_jacobian.txt", append);
 
-exec("rm tensile_non_linear_KS/newton_convergence.csv");
-exec("touch tensile_non_linear_KS/newton_convergence.csv");
-ofstream outconv("tensile_non_linear_KS/newton_convergence.csv", append);
-outconv << "L2_error" << endl;
-
 for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
   // ***************************************************************************
   // Parameters
@@ -71,7 +66,10 @@ for (real d1 = d1start; d1 >= d1final; d1 /= d1factor) {
   int loopmax = 100;
   real alpha = 1.0;
 
-
+  exec("rm tensile_non_linear_KS/newton_convergence.csv");
+  exec("touch tensile_non_linear_KS/newton_convergence.csv");
+  ofstream outconv("tensile_non_linear_KS/newton_convergence.csv", append);
+  outconv << "L2_error" << endl;
   // ***************************************************************************
   // Newton loop
   // ***************************************************************************

@@ -5,7 +5,7 @@ exec("rm tensile_linear.csv");
 exec("touch tensile_linear.csv");
 
 ofstream out("tensile_linear.csv", append);
-out << "u,nu_conv,nu_Sig" << endl;
+out << "u,nu_conv,nu_bd" << endl;
 
 real ustart = 0.1, v = -0.1, ufinal = 1.0, uincr = 0.1;
 
@@ -77,15 +77,15 @@ for (real u = ustart; u <= ufinal; u += uincr) {
   cout << "Estimated nu using convect: " << nu12conv << endl;
 
   // ***************************************************************************
-  // Estimate of nu using by Sigmund formula
+  // Estimate of nu using border integrals
   // ***************************************************************************
-  real d1Sig = int1d(Th, 2)(u1) - int1d(Th, 4)(u1);
-  real d2Sig = int1d(Th, 3)(u2) - int1d(Th, 1)(u2);
-  cout << "d1Sig = " << d1Sig << endl;
-  cout << "d2Sig = " << d2Sig << endl;
+  real d1bd = int1d(Th, 2)(u1) - int1d(Th, 4)(u1);
+  real d2bd = int1d(Th, 3)(u2) - int1d(Th, 1)(u2);
+  cout << "d1bd = " << d1bd << endl;
+  cout << "d2bd = " << d2bd << endl;
 
-  real nu12Sig = - d2Sig / d1Sig;
-  cout << "Estimated nu by Sigmund formula: " << nu12Sig << endl;
+  real nu12bd = - d2bd / d1bd;
+  cout << "Estimated nu by bdmund formula: " << nu12bd << endl;
 
-  out << u << "," << nu12conv << "," << nu12Sig << endl;
+  out << u << "," << nu12conv << "," << nu12bd << endl;
 }
