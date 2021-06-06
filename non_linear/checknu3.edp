@@ -6,37 +6,73 @@ load "iovtk";
 include "params.edp";
 include "macros.edp"
 
-Xhp v1;
+mesh Th1 = readmesh("results/adapt one time at ii 4 stop at maxiter 5/4_mesh.msh");
+plot(Th1, wait = 1, cmm="Loaded mesh");
+fespace Xh1(Th1,P1);
+Xh1 v1;
 ifstream fu("results/adapt one time at ii 4 stop at maxiter 5/5_density.txt");
 fu >> v1[];
-plot(v1, wait = 0, fill = 1, cmm = "Loaded density");
+plot(v1, wait = 1, fill = 1, cmm = "Loaded density");
+
+mesh Th2 = movemesh(Th1,[-x, y]); // top left
+Th1 = Th1 + Th2;                  // top left-right
+Th1 = change(Th1, rmInternalEdges= true);
+plot(Th1, wait=1,cmm="Th1+Th2");
+
+mesh Th3 = movemesh(Th1,[ x,-y]); // bottom left-right
+fespace Vh3(Th3,P1);
+plot(Th3,wait=1,cmm="Th3+Th4");
+Th1 = Th1+Th3;        // 4x4 super-grid
+Th1 = change(Th1, rmInternalEdges= true);
+
+plot(Th1,cmm="Final mesh");
 
 // mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1], flags=1);
 // fespace Xh2(Th2, P1);
 // Xh2 v2; // densità su Th2
-//
-// for(int i = 0; i < Th2.nt; i++)
-//   for(int j = 0; j < 3; j++)
-//     if      (Th2[i][j].x >= 0 & Th2[i][j].y >= 0) v2[][Xh2(i,j)] = v( Th2[i][j].x, Th2[i][j].y);
-//     else if (Th2[i][j].x <  0 & Th2[i][j].y >= 0) v2[][Xh2(i,j)] = v(-Th2[i][j].x, Th2[i][j].y);
-//     else if (Th2[i][j].x <  0 & Th2[i][j].y <  0) v2[][Xh2(i,j)] = v(-Th2[i][j].x,-Th2[i][j].y);
-//     else                                          v2[][Xh2(i,j)] = v( Th2[i][j].x,-Th2[i][j].y);
-// plot(v2, fill = 1,  wait = 1);
-// // traslo nel primo quadrante: così Th2 da [-1,1]^2 diventa la nuova "unit cell" [0,2]^2
-// Xh2 u2x =1, u2y = 1;
-// real [int] v2old = v2[];
-// Th2 = movemesh(Th2,[x+u2x,y+u2y]);
-// v2 = v2;
-// v2[] = v2old;
-// plot(v2, fill = 1, wait = 0, ps = "results/adapt one time at ii 4 stop at maxiter 5/final_density_after_shift.ps", cmm = "Final Density after shift");
-//
+fespace Xh2(Th1, P1);
+Xh2 v2; // densità su Th2
+
+for(int i = 0; i < Th1.nt; i++)
+  for(int j = 0; j < 3; j++)
+    if      (Th1[i][j].x >= 0 & Th1[i][j].y >= 0) v2[][Xh2(i,j)] = v1( Th1[i][j].x, Th1[i][j].y);
+    else if (Th1[i][j].x <  0 & Th1[i][j].y >= 0) v2[][Xh2(i,j)] = v1(-Th1[i][j].x, Th1[i][j].y);
+    else if (Th1[i][j].x <  0 & Th1[i][j].y <  0) v2[][Xh2(i,j)] = v1(-Th1[i][j].x,-Th1[i][j].y);
+    else                                          v2[][Xh2(i,j)] = v1( Th1[i][j].x,-Th1[i][j].y);
+plot(v2, fill = 1,  wait = 1);
+
+//find new label
+int Nbe = Th1.nbe;
+for(int i =0; i < Nbe; i++){
+  for (int j = 0; j < 1; j++){
+    cout << i << " " << j << " - Th1[i][j] = " << Th.be(i)[j]
+                 << ", x = " << Th1.be(i)[j].x
+                 << ", y= " << Th1.be(i)[j].y
+                 << ", label=" << Th1.be(i)[j].label << endl;
+  }
+}
+
+//func newlab = (label == 3 ) ? 1 /*: (label == 2 && x < 0) ? 4 :*/ label;
+int[int] re =[3,1, 2,2, 3, 3, 2,4];
+Th1 = change(Th1, refe = re); //flabel = (label == 3 && x < 0) ? 1: label
+
+// traslo nel primo quadrante: così Th2 da [-1,1]^2 diventa la nuova "unit cell" [0,2]^2
+Xh2 u2x =1, u2y = 1;
+real [int] v2old = v2[];
+Th1 = movemesh(Th1,[x+u2x,y+u2y]);
+v2 = v2;
+v2[] = v2old;
+plot(v2, fill = 1, wait = 1, ps = "results/adapt one time at ii 4 stop at maxiter 5/final_density_after_shift.ps", cmm = "Final Density after shift");
+
+
+
 // //Compute nu Poisson coefficient to check our results
-// //Solve primal problem: with v2, on Th2?
-// fespace Vh2(Th2, [P1, P1]);
+// //Solve primal problem: with v2, on Th1?
+// fespace Vh2(Th1, [P1, P1]);
 // Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
-//
+//    cout << "Boundary element " << k << " = " << BoundaryElement << endl;
 // problem primallinearized([varu21,varu22], [psi21, psi22]) =
-//   int2d(Th2) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi21)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi21)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
+//   int2d(Th1) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi21)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi21)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
 //                                         * (invC11(u210,u220) * gradE11(u210,u220,varu21,varu22) + invC12(u210,u220) * gradE12(u210,u220,varu21,varu22)
 //                                         +  invC21(u210,u220) * gradE21(u210,u220,varu21,varu22) + invC22(u210,u220) * gradE22(u210,u220,varu21,varu22))
 //
@@ -64,7 +100,7 @@ plot(v1, wait = 0, fill = 1, cmm = "Loaded density");
 //                             gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + E22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22) )
 //            )
 //
-//     + int2d(Th2) (v2^q * L*detF(u210,u220)*(detF(u210,u220)-1.) * (invC11(u210,u220) * gradE11(u210,u220,psi21,psi22)
+//     + int2d(Th1) (v2^q * L*detF(u210,u220)*(detF(u210,u220)-1.) * (invC11(u210,u220) * gradE11(u210,u220,psi21,psi22)
 //                                                            + invC12(u210,u220) * gradE12(u210,u220,psi21,psi22)
 //                                                            + invC21(u210,u220) * gradE21(u210,u220,psi21,psi22)
 //                                                            + invC22(u210,u220) * gradE22(u210,u220,psi21,psi22))
@@ -83,8 +119,8 @@ plot(v1, wait = 0, fill = 1, cmm = "Loaded density");
 //  err21[] = u1[];
 //  err21[] -= u210[];
 //
-//  real erru = int2d(Th2)(err21^2 + err22^2);
-//  real normu = int2d(Th2)(u210^2 + u220^2);
+//  real erru = int2d(Th1)(err21^2 + err22^2);
+//  real normu = int2d(Th1)(u210^2 + u220^2);
 //  // return error estimate (stopping criterion)
 //  return sqrt(erru / (normu+1e-15));
 // }
@@ -112,7 +148,7 @@ plot(v1, wait = 0, fill = 1, cmm = "Loaded density");
 //     u210[] = u21[];
 // }
 //
-// real d2 = int1d(Th2,3)(u2);
+// real d2 = int1d(Th1,3)(u2);
 // nu12 = - d2 / d1; // estimated nu
 //
 // cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
