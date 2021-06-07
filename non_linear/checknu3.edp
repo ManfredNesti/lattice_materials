@@ -24,14 +24,12 @@ fespace Vh3(Th3,P1);
 plot(Th3,wait=1,cmm="Th3+Th4");
 Th1 = Th1+Th3;        // 4x4 super-grid
 Th1 = change(Th1, rmInternalEdges= true);
+//Th1 = change(Th1, label= r1);
 
 plot(Th1,cmm="Final mesh");
 
-// mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1], flags=1);
-// fespace Xh2(Th2, P1);
-// Xh2 v2; // densità su Th2
 fespace Xh2(Th1, P1);
-Xh2 v2; // densità su Th2
+Xh2 v2; // densità su Th1 nuova
 
 for(int i = 0; i < Th1.nt; i++)
   for(int j = 0; j < 3; j++)
@@ -41,21 +39,55 @@ for(int i = 0; i < Th1.nt; i++)
     else                                          v2[][Xh2(i,j)] = v1( Th1[i][j].x,-Th1[i][j].y);
 plot(v2, fill = 1,  wait = 1);
 
+func newlab1 = (label == 3 && y<0) ? 1 : label;
+func newlab2 = (label == 2 && x<0) ? 4 : label;
+Th1 = change(Th1, flabel = newlab1);
+Th1 = change(Th1, flabel = newlab2);
+
 //find new label
-int Nbe = Th1.nbe;
-for(int i =0; i < Nbe; i++){
-  for (int j = 0; j < 1; j++){
-    cout << i << " " << j << " - Th1[i][j] = " << Th.be(i)[j]
-                 << ", x = " << Th1.be(i)[j].x
-                 << ", y= " << Th1.be(i)[j].y
-                 << ", label=" << Th1.be(i)[j].label << endl;
-  }
-}
+// int Nbe = Th1.nbe;
+//cout << "nbe" << Nbe << endl; //se faccio qst prima o dopo il cilo dopo dà problemi -> SI FERMA TIPO AL 120
+//cout << "se stampo cose a caso?" << endl; //ANCHE COSÌ NON VA > SI FERMA TIPO AL 120
 
-//func newlab = (label == 3 ) ? 1 /*: (label == 2 && x < 0) ? 4 :*/ label;
-int[int] re =[3,1, 2,2, 3, 3, 2,4];
-Th1 = change(Th1, refe = re); //flabel = (label == 3 && x < 0) ? 1: label
+// for(int i =0; i < Nbe; i++){
+//   for (int j = 0; j < 2; j++){
+//     cout << i << " " << j << " - Th1[i][j] = " << Th.be(i)[j]
+//                  << ", x = " << Th1.be(i)[j].x
+//                  << ", y= " << Th1.be(i)[j].y
+//                  << ", label=" << Th1.be(i)[j].label << endl;
+//   }
+// }
 
+// change label
+// for(int i =0; i < Nbe; i++){
+//   for (int j = 0; j < 2; j++){
+//     if      (Th1.be(i)[j].y < 0 && Th1.be(i)[j].label == 3)  Th1.be(i).label = 1;
+//     else if( Th1.be(i)[j].x < 0 && Th1.be(i)[j].label == 2 )  Th1.be(i).label = 4;
+//   }
+// }
+// QUESTO NON FUNZIONA
+//int newlab =1;
+// Th1.be(3).label = newlab;
+// Th1.be(3)[0].label = 1;
+// Th1.be(3)[1].label = 1;
+
+// Nbe = Th1.nbe;
+// cout << "nbe" << Nbe << endl;
+//cout << "prova" << Th1.be(3).label << endl; //se fatto non va ciclo for per stampare le label no sense
+// //print new label
+// for(int i =0; i < Nbe; i++){
+//   for (int j = 0; j < 2; j++){
+//     cout << i << " " << j << " - Th1[i][j] = " << Th1.be(i)[j]
+//                  << ", x = " << Th1.be(i)[j].x
+//                  << ", y= " << Th1.be(i)[j].y
+//                  << ", label=" << Th1.be(i)[j].label << endl;
+//   }
+// }
+
+// cout << "nbe" << Nbe << endl;
+// cout << "prova" << Th1.be(3)[1].label << endl;
+
+// POTREI AVER SCOPERTO CHE STAMPARE LE LABEL NON SERVA A NULLA ... CHE BELLO
 // traslo nel primo quadrante: così Th2 da [-1,1]^2 diventa la nuova "unit cell" [0,2]^2
 Xh2 u2x =1, u2y = 1;
 real [int] v2old = v2[];
@@ -64,92 +96,129 @@ v2 = v2;
 v2[] = v2old;
 plot(v2, fill = 1, wait = 1, ps = "results/adapt one time at ii 4 stop at maxiter 5/final_density_after_shift.ps", cmm = "Final Density after shift");
 
+bool checkLaplacepb = 0;
+if (checkLaplacepb)
+{
+	// Parameters
+	func f = x*y*y; //right hand side
+	fespace Qh(Th1,P1);
+	Qh uh, vh;
+	// Problem
+	problem laplace (uh, vh)
+	    = int2d(Th1)(
+	        dx(uh)*dx(vh)
+	        + dy(uh)*dy(vh)
+	    )
+	    + int2d(Th1)(
+	        - f*vh
+	    )
+	    + on (1,4, uh = 0)
+      + on (2,3 , uh = 3)
+	    ;
+	// Solve
+	laplace;
+	// Plot
+	plot(uh, value = 1, fill=1, wait=1, cmm="u1");
 
+}
 
-// //Compute nu Poisson coefficient to check our results
-// //Solve primal problem: with v2, on Th1?
-// fespace Vh2(Th1, [P1, P1]);
+//Compute nu Poisson coefficient to check our results
+//Solve primal problem: with v2, on Th1?
+
+// fespace Vh2(Th1, [P1, P1], periodic = [[2,y]]);
 // Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
-//    cout << "Boundary element " << k << " = " << BoundaryElement << endl;
-// problem primallinearized([varu21,varu22], [psi21, psi22]) =
-//   int2d(Th1) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi21)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi21)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
-//                                         * (invC11(u210,u220) * gradE11(u210,u220,varu21,varu22) + invC12(u210,u220) * gradE12(u210,u220,varu21,varu22)
-//                                         +  invC21(u210,u220) * gradE21(u210,u220,varu21,varu22) + invC22(u210,u220) * gradE22(u210,u220,varu21,varu22))
-//
-//            + v2^q * L * (detF(u210,u220)-1) * detF(u210,u220) * ( - D1111(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
-//                                                        - D1112(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
-//                                                        - D1121(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
-//                                                        - D1122(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22) + invC11(u210,u220) * grad2E11(psi21,psi22,varu21,varu22)
-//                                                        - D1211(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
-//                                                        - D1212(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
-//                                                        - D1221(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
-//                                                        - D1222(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22) + invC12(u210,u220) * grad2E12(psi21,psi22,varu21,varu22)
-//                                                        - D2111(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
-//                                                        - D2112(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
-//                                                        - D2121(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
-//                                                        - D2122(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22) + invC21(u210,u220) * grad2E21(psi21,psi22,varu21,varu22)
-//                                                        - D2211(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
-//                                                        - D2212(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
-//                                                        - D2221(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
-//                                                        - D2222(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + invC22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22)
-//                                                    )
-//
-//             + v2^q * 2.0*M* (gradE11(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22) + E11(u210,u220) * grad2E11(psi21,psi22,varu21,varu22) +
-//                             gradE12(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22) + E12(u210,u220) * grad2E12(psi21,psi22,varu21,varu22) +
-//                             gradE21(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22) + E21(u210,u220) * grad2E21(psi21,psi22,varu21,varu22) +
-//                             gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + E22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22) )
-//            )
-//
-//     + int2d(Th1) (v2^q * L*detF(u210,u220)*(detF(u210,u220)-1.) * (invC11(u210,u220) * gradE11(u210,u220,psi21,psi22)
-//                                                            + invC12(u210,u220) * gradE12(u210,u220,psi21,psi22)
-//                                                            + invC21(u210,u220) * gradE21(u210,u220,psi21,psi22)
-//                                                            + invC22(u210,u220) * gradE22(u210,u220,psi21,psi22))
-//                 + v2^q * 2.0 * M * (E11(u210,u220) * gradE11(u210,u220,psi21,psi22)
-//                                  + E12(u210,u220) * gradE12(u210,u220,psi21,psi22)
-//                                  + E21(u210,u220) * gradE21(u210,u220,psi21,psi22)
-//                                  + E22(u210,u220) * gradE22(u210,u220,psi21,psi22)))
-//     + on(2,varu21=0) // Dirichlet
-//     + on(1,varu22=0) // symmetric BC
-//     + on(4,varu21=0) // symmetric BC
-//   ;
-//
-// // Residual for Newton method
-// func real errorL2()
-// {
-//  err21[] = u1[];
-//  err21[] -= u210[];
-//
-//  real erru = int2d(Th1)(err21^2 + err22^2);
-//  real normu = int2d(Th1)(u210^2 + u220^2);
-//  // return error estimate (stopping criterion)
-//  return sqrt(erru / (normu+1e-15));
-// }
-//
-// // Newton initialization ?
-// [u210, u220] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
-// [u21, u22] = [u210, u220]; // u_1
-// real tol = 1.e-12;
-// real res = 2. * tol;
-// int loopcount = 0;
-// int loopmax = 100;
-// real alpha = 1.0;
-//
-// // Iterations
-// while (loopcount <= loopmax && res >= tol){
-//     loopcount ++;
-//     cout << "Newton iteration " << loopcount << endl;
-//     // Solve
-//     primallinearized;
-//     // Update
-//     u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
-//     // update error for the stopping criterion
-//     res = errorL2();
-//     //Update old solution
-//     u210[] = u21[];
-// }
-//
-// real d2 = int1d(Th1,3)(u2);
-// nu12 = - d2 / d1; // estimated nu
-//
-// cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
-// cout << "*********************************************" << endl;
+
+fespace Vh21(Th1, P1);
+fespace Vh22(Th1, P1, periodic = [[2,y], [4,y]]);
+Vh21 u21,u210,varu21,psi21,err21;
+Vh22 u22,u220,varu22,psi22,err22;
+
+problem primallinearized([varu21,varu22], [psi21, psi22]) =
+  int2d(Th1) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi21)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi21)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
+                                        * (invC11(u210,u220) * gradE11(u210,u220,varu21,varu22) + invC12(u210,u220) * gradE12(u210,u220,varu21,varu22)
+                                        +  invC21(u210,u220) * gradE21(u210,u220,varu21,varu22) + invC22(u210,u220) * gradE22(u210,u220,varu21,varu22))
+
+           + v2^q * L * (detF(u210,u220)-1) * detF(u210,u220) * ( - D1111(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
+                                                       - D1112(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
+                                                       - D1121(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22)
+                                                       - D1122(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22) + invC11(u210,u220) * grad2E11(psi21,psi22,varu21,varu22)
+                                                       - D1211(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
+                                                       - D1212(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
+                                                       - D1221(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22)
+                                                       - D1222(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22) + invC12(u210,u220) * grad2E12(psi21,psi22,varu21,varu22)
+                                                       - D2111(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
+                                                       - D2112(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
+                                                       - D2121(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22)
+                                                       - D2122(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22) + invC21(u210,u220) * grad2E21(psi21,psi22,varu21,varu22)
+                                                       - D2211(u210,u220) * gradE11(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
+                                                       - D2212(u210,u220) * gradE12(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
+                                                       - D2221(u210,u220) * gradE21(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22)
+                                                       - D2222(u210,u220) * gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + invC22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22)
+                                                   )
+
+            + v2^q * 2.0*M* (gradE11(u210,u220,psi21,psi22) * gradE11(u210,u220,varu21,varu22) + E11(u210,u220) * grad2E11(psi21,psi22,varu21,varu22) +
+                            gradE12(u210,u220,psi21,psi22) * gradE12(u210,u220,varu21,varu22) + E12(u210,u220) * grad2E12(psi21,psi22,varu21,varu22) +
+                            gradE21(u210,u220,psi21,psi22) * gradE21(u210,u220,varu21,varu22) + E21(u210,u220) * grad2E21(psi21,psi22,varu21,varu22) +
+                            gradE22(u210,u220,psi21,psi22) * gradE22(u210,u220,varu21,varu22) + E22(u210,u220) * grad2E22(psi21,psi22,varu21,varu22) )
+           )
+
+    + int2d(Th1) (v2^q * L*detF(u210,u220)*(detF(u210,u220)-1.) * (invC11(u210,u220) * gradE11(u210,u220,psi21,psi22)
+                                                           + invC12(u210,u220) * gradE12(u210,u220,psi21,psi22)
+                                                           + invC21(u210,u220) * gradE21(u210,u220,psi21,psi22)
+                                                           + invC22(u210,u220) * gradE22(u210,u220,psi21,psi22))
+                + v2^q * 2.0 * M * (E11(u210,u220) * gradE11(u210,u220,psi21,psi22)
+                                 + E12(u210,u220) * gradE12(u210,u220,psi21,psi22)
+                                 + E21(u210,u220) * gradE21(u210,u220,psi21,psi22)
+                                 + E22(u210,u220) * gradE22(u210,u220,psi21,psi22)))
+    + on(2,varu21=0) // Dirichlet
+  ;
+
+
+// Residual for Newton method
+func real errorL2()
+{
+ err21[] = u1[];
+ err21[] -= u210[];
+ err22[] = u2[];
+ err22[] -= u220[];
+
+ real erru = int2d(Th1)(err21^2 + err22^2);
+ real normu = int2d(Th1)(u210^2 + u220^2);
+ // return error estimate (stopping criterion)
+ return sqrt(erru / (normu+1e-15));
+}
+
+// Newton initialization ?
+//[u210, u220] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+//[u21, u22] = [u210, u220]; // u_1
+u210 = d1*x;
+u21 = u210;
+u220 = 0;
+u22 = 0;
+real tol = 1.e-12;
+real res = 2. * tol;
+int loopcount = 0;
+int loopmax = 100;
+real alpha = 1.0;
+
+// Iterations
+while (loopcount <= loopmax && res >= tol){
+    loopcount ++;
+    cout << "Newton iteration " << loopcount << endl;
+    // Solve
+    primallinearized;
+    // Update
+    u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
+    u22[] += alpha * varu22[];
+    // update error for the stopping criterion
+    res = errorL2();
+    //Update old solution
+    u210[] = u21[];
+    u220[] = u22[];
+}
+
+real d2 = int1d(Th1,3)(u22);
+nu12 = - d2 / d1; // estimated nu
+
+cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
+cout << "*********************************************" << endl;
