@@ -70,13 +70,13 @@ real IPOPTtol = 1e-3;
 int rnd = 0;
 int seed = 10;
 if (ld) {
-  ifstream fu(path+idxld+"_density.txt");
+  ifstream fu(path + idxld + "_density.txt");
   fu >> v[];
-  plot(v, wait = 0, fill=1, cmm="Loaded density");
+  plot(v, wait = 0, fill=1, cmm = "Loaded density",  ps = "Loaded density");
 } else if (rnd) {
   srandom(seed);
   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
-  plot(v, fill = 1, cmm="Initial density", wait=0);
+  plot(v, fill = 1, cmm = "Initial density", ps = "initial density", wait = 0);
 } else {
   // v = 0.5;
   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
@@ -84,7 +84,7 @@ if (ld) {
   // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
   // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
   v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
-  plot(v, fill = 1, cmm="Initial density", wait=0);
+  plot(v, fill = 1, cmm = "Initial density", ps = "initial density", wait = 0);
 }
 
 // Power penalty

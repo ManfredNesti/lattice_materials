@@ -21,5 +21,6 @@ mv results/*.ps results/$STR;
 mv results/*.msh results/$STR;
 mv results/*.txt results/$STR;
 rm ipopt.out;
+find . -name "*.ps" -exec rename 's/\.ps$/.eps/' '{}' +
 
 echo "--- Script ended ---";
