@@ -133,9 +133,9 @@ problem primallinearized([varu21,varu22], [psi21, psi22]) =
 // Residual for Newton method
 func real errorL2()
 {
- err21[] = u1[];
+ err21[] = u21[];
  err21[] -= u210[];
- //err22[] = u2[];
+ //err22[] = u22[];
  //err22[] -= u220[];
 
  real erru = int2d(Th1)(err21^2 + err22^2);
@@ -172,6 +172,7 @@ while (loopcount <= loopmax && res >= tol){
     //Update old solution
     u210[] = u21[];
     //u220[] = u22[];
+    cout << "res :" << res << endl;
 }
 
 cout << "check for d1: " << int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21)<< endl;
@@ -185,9 +186,10 @@ cout << "*********************************************" << endl;
 // ***************************************************************************
   // Movemesh
   // ***************************************************************************
-  real coef = 0.05;
+  real coef = 1;
   real minarea = checkmovemesh(Th1, [x+ coef * u21, y+coef * u22]);
   if (minarea > 0) {// movemesh will be ok
     mesh th1 = movemesh(Th1, [x + coef * u21, y + coef * u22]);
-    plot(Th1, th1, wait = 1, cmm = "d1 = "+d1);
+    plot(Th1, wait = 1, cmm = "initial mesh");
+    plot(th1, wait = 1, cmm = "final d1 = "+d1);
   } else cout << "MOVEMESH ERROR: Min area = " << minarea << endl;

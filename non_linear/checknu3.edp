@@ -133,9 +133,9 @@ problem primallinearized([varu21,varu22], [psi21, psi22]) =
 // Residual for Newton method
 func real errorL2()
 {
- err21[] = u1[];
+ err21[] = u21[];
  err21[] -= u210[];
- // err22[] = u2[];
+ // err22[] = u22[];
  // err22[] -= u220[];
 
  real erru = int2d(Th1)(err21^2 + err22^2);
