@@ -50,9 +50,9 @@ real [int] v2old = v2[];
 Th1 = movemesh(Th1,[x+u2x,y+u2y]);
 v2 = v2;
 v2[] = v2old;
-plot(v2, fill = 1, wait = 1, ps = "results/adapt one time at ii 4 stop at maxiter 5/final_density_after_shift.ps", cmm = "Final Density after shift");
+plot(v2, value = 1, fill = 1, wait = 1, ps = "results/adapt one time at ii 4 stop at maxiter 5/final_density_after_shift.ps", cmm = "Final Density after shift");
 
-bool checkLaplacepb = 0;
+bool checkLaplacepb = 0; //check per le label
 if (checkLaplacepb)
 {
 	// Parameters
@@ -81,10 +81,10 @@ if (checkLaplacepb)
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem: with v2, on Th1
 
-fespace Vh2(Th1, [P1, P1], periodic = [[2,y], [4,y], [1,x], [3,x]]);
+fespace Vh2(Th1, [P1, P1], periodic = [[2,y], [4,y]]);
 Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
 
-// fespace Vh21(Th1, P1, periodic= [[2,y], [4,y]]);
+// fespace Vh21(Th1, P1);
 // fespace Vh22(Th1, P1, periodic= [[2,y], [4,y]]);
 // Vh21 u21,u210,varu21,psi21,err21;
 // Vh22 u22,u220,varu22,psi22,err22;
@@ -135,8 +135,8 @@ func real errorL2()
 {
  err21[] = u1[];
  err21[] -= u210[];
- //err22[] = u2[];
- //err22[] -= u220[];
+ // err22[] = u2[];
+ // err22[] -= u220[];
 
  real erru = int2d(Th1)(err21^2 + err22^2);
  real normu = int2d(Th1)(u210^2 + u220^2);
@@ -157,27 +157,37 @@ real res = 2. * tol;
 int loopcount = 0;
 int loopmax = 100;
 real alpha = 1.0;
-//
-// // Iterations
-// while (loopcount <= loopmax && res >= tol){
-//     loopcount ++;
-//     cout << "Newton iteration " << loopcount << endl;
-//     // Solve
-//     primallinearized;
-//     // Update
-//     u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
-//     //u22[] += alpha * varu22[];
-//     // update error for the stopping criterion
-//     res = errorL2();
-//     //Update old solution
-//     u210[] = u21[];
-//     //u220[] = u22[];
-// }
-//
-// cout << "check for d1: " << int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21)<< endl; // così viene 1.4013e-45,prima solo su bordo 2 1e-30
-//
-// real d2 = int1d(Th1,3)(u22) - int1d(Th1,1)(u22);
-// nu12 = - d2 / d1; // estimated nu -7.40149e-16
-//
-// cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
-// cout << "*********************************************" << endl;
+
+// Iterations
+while (loopcount <= loopmax && res >= tol){
+    loopcount ++;
+    cout << "Newton iteration " << loopcount << endl;
+    // Solve
+    primallinearized;
+    // Update
+    u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
+    // u22[] += alpha * varu22[];
+    // update error for the stopping criterion
+    res = errorL2();
+    //Update old solution
+    u210[] = u21[];
+    //u220[] = u22[];
+}
+
+cout << "check for d1: " << int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21)<< endl;
+
+real d2 = int1d(Th1,3)(u22) - int1d(Th1,1)(u22);
+nu12 = - d2 / d1; // estimated nu
+
+cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
+cout << "*********************************************" << endl;
+
+// ***************************************************************************
+  // Movemesh
+  // ***************************************************************************
+  real coef = 0.05;
+  real minarea = checkmovemesh(Th1, [x+ coef * u21, y+coef * u22]);
+  if (minarea > 0) {// movemesh will be ok
+    mesh th1 = movemesh(Th1, [x + coef * u21, y + coef * u22]);
+    plot(Th1, th1, wait = 1, cmm = "d1 = "+d1);
+  } else cout << "MOVEMESH ERROR: Min area = " << minarea << endl;
