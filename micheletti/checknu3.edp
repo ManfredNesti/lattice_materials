@@ -6,11 +6,11 @@ load "iovtk";
 include "params.edp";
 include "macros.edp"
 
-mesh Th1 = readmesh("results/adapt one time at ii 4 stop at maxiter 5/4_mesh.msh");
+mesh Th1 = readmesh("4_mesh.msh");
 plot(Th1, wait = 1, cmm="Loaded mesh");
 fespace Xh1(Th1,P1);
 Xh1 v1;
-ifstream fu("results/adapt one time at ii 4 stop at maxiter 5/5_density.txt");
+ifstream fu("5_density.txt");
 fu >> v1[];
 plot(v1, wait = 1, fill = 1, cmm = "Loaded density");
 

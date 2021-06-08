@@ -16,6 +16,7 @@
  /eF {newpath moveto counttomark 2 idiv {lineto} repeat closepath fill cleartomark} def
  /P { /yy exch def /xx exch def   xx xx 1 add yy yy 1 add  rec  fill } def
  2 setlinewidth
+1.000 0.829 0.163 C
 bF 5174 3359 5000 3359 5124 3393 eF
 bF 5124 3393 5199 3469 5174 3359 eF
 bF 5124 3393 5000 3359 5000 3414 eF
