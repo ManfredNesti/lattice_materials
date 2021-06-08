@@ -125,13 +125,13 @@ if (checkLaplacepb)
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem: with v2, on Th1?
 
-// fespace Vh2(Th1, [P1, P1], periodic = [[2,y]]);
-// Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
+fespace Vh2(Th1, [P1, P1], periodic = [[2,y], [4,y]]);
+Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
 
-fespace Vh21(Th1, P1);
-fespace Vh22(Th1, P1, periodic = [[2,y], [4,y]]);
-Vh21 u21,u210,varu21,psi21,err21;
-Vh22 u22,u220,varu22,psi22,err22;
+// fespace Vh21(Th1, P1, periodic= [[2,y], [4,y]]);
+// fespace Vh22(Th1, P1, periodic= [[2,y], [4,y]]);
+// Vh21 u21,u210,varu21,psi21,err21;
+// Vh22 u22,u220,varu22,psi22,err22;
 
 problem primallinearized([varu21,varu22], [psi21, psi22]) =
   int2d(Th1) (v2^q * L * (2.0*detF(u210,u220)-1.) * (dx(psi21)*F22(u210,u220) + dy(psi22)*F11(u210,u220) - dy(psi21)*F21(u210,u220) - dx(psi22)*F12(u210,u220))
@@ -179,8 +179,8 @@ func real errorL2()
 {
  err21[] = u1[];
  err21[] -= u210[];
- err22[] = u2[];
- err22[] -= u220[];
+ //err22[] = u2[];
+ //err22[] -= u220[];
 
  real erru = int2d(Th1)(err21^2 + err22^2);
  real normu = int2d(Th1)(u210^2 + u220^2);
@@ -189,12 +189,12 @@ func real errorL2()
 }
 
 // Newton initialization ?
-//[u210, u220] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
-//[u21, u22] = [u210, u220]; // u_1
-u210 = d1*x;
-u21 = u210;
-u220 = 0;
-u22 = 0;
+[u210, u220] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+[u21, u22] = [u210, u220]; // u_1
+// u210 = d1*x;
+// u21 = u210;
+// u220 = 0;
+// u22 = 0;
 real tol = 1.e-12;
 real res = 2. * tol;
 int loopcount = 0;
@@ -209,15 +209,17 @@ while (loopcount <= loopmax && res >= tol){
     primallinearized;
     // Update
     u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
-    u22[] += alpha * varu22[];
+    //u22[] += alpha * varu22[];
     // update error for the stopping criterion
     res = errorL2();
     //Update old solution
     u210[] = u21[];
-    u220[] = u22[];
+    //u220[] = u22[];
 }
 
-real d2 = int1d(Th1,3)(u22);
+cout << "check for d1: " << int1d(Th1, 2)(u21) << endl;
+
+real d2 = int1d(Th1,3)(u22) - int1d(Th1,1)(u22);
 nu12 = - d2 / d1; // estimated nu
 
 cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
