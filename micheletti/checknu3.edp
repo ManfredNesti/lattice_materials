@@ -52,7 +52,7 @@ v2 = v2;
 v2[] = v2old;
 plot(v2, fill = 1,value = 1, wait = 1, ps = "final_density_after_shift.ps", cmm = "Final Density after shift");
 
-bool checkLaplacepb = 0;
+bool checkLaplacepb = 0; //serve per check label
 if (checkLaplacepb)
 {
 	// Parameters
