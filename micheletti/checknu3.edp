@@ -50,7 +50,7 @@ real [int] v2old = v2[];
 Th1 = movemesh(Th1,[x+u2x,y+u2y]);
 v2 = v2;
 v2[] = v2old;
-plot(v2, fill = 1,value = 1, wait = 1, ps = "results/adapt one time at ii 4 stop at maxiter 5/final_density_after_shift.ps", cmm = "Final Density after shift");
+plot(v2, fill = 1,value = 1, wait = 1, ps = "final_density_after_shift.ps", cmm = "Final Density after shift");
 
 bool checkLaplacepb = 0;
 if (checkLaplacepb)
