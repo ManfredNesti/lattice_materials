@@ -157,27 +157,27 @@ real res = 2. * tol;
 int loopcount = 0;
 int loopmax = 100;
 real alpha = 1.0;
-
-// Iterations
-while (loopcount <= loopmax && res >= tol){
-    loopcount ++;
-    cout << "Newton iteration " << loopcount << endl;
-    // Solve
-    primallinearized;
-    // Update
-    u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
-    //u22[] += alpha * varu22[];
-    // update error for the stopping criterion
-    res = errorL2();
-    //Update old solution
-    u210[] = u21[];
-    //u220[] = u22[];
-}
-
-cout << "check for d1: " << int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21)<< endl; // così viene 1.4013e-45,prima solo su bordo 2 1e-30
-
-real d2 = int1d(Th1,3)(u22) - int1d(Th1,1)(u22);
-nu12 = - d2 / d1; // estimated nu -7.40149e-16
-
-cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
-cout << "*********************************************" << endl;
+//
+// // Iterations
+// while (loopcount <= loopmax && res >= tol){
+//     loopcount ++;
+//     cout << "Newton iteration " << loopcount << endl;
+//     // Solve
+//     primallinearized;
+//     // Update
+//     u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
+//     //u22[] += alpha * varu22[];
+//     // update error for the stopping criterion
+//     res = errorL2();
+//     //Update old solution
+//     u210[] = u21[];
+//     //u220[] = u22[];
+// }
+//
+// cout << "check for d1: " << int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21)<< endl; // così viene 1.4013e-45,prima solo su bordo 2 1e-30
+//
+// real d2 = int1d(Th1,3)(u22) - int1d(Th1,1)(u22);
+// nu12 = - d2 / d1; // estimated nu -7.40149e-16
+//
+// cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
+// cout << "*********************************************" << endl;
