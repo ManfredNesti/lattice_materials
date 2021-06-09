@@ -1,0 +1,693 @@
+   22 : savemesh (Th, "results/mesh_initial.msh" );
+   23 : while(stopmesh > tolmesh && ii < maxit){
+   24 : 
+   25 : 	jj = 0;
+   26 : 
+   27 : 	// Power penalty law
+   28 : 	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
+   29 : 	else q = qmax;
+   30 : 
+   31 : 
+   32 : 	IPOPT(J, gradJ, ipC, ipGradC, v[],
+   33 : 	  lb  = xlb[], ub  = xub[],
+   34 :    	  clb = clb  , cub = cub  ,
+   35 : 	  checkindex = 1, structjacc = [gvi,gvj],
+   36 :       maxiter = IPOPTmaxiter + 100 * (ii == 0), warmstart = ii,
+   37 : 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
+   38 : 	  //printlevel = 1,
+   39 : 	  //derivativetest="first-order");
+   40 :       //,maxiter=10);
+   41 : 	  );
+   42 : 
+   43 : 		// Helmholtz filtering
+   44 : 		if(helm && ii != maxit - 1 && ii % 2 == 1){
+   45 : 			helmholtz;
+   46 : 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+   47 : 			plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+   48 : 			v = vHelm;
+   49 : 		}
+   50 : 
+   51 : 	// Mesh adaptivity
+   52 :   if(meshad){
+   53 :     maxsK = 1;
+   54 :     ntold = Th.nt;
+   55 :     makemetrica(tau);
+   56 :   	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+   57 : 		savemesh (Th, "results/meshii"+ii+".msh" );
+   58 :   	plot(Th, wait = 0, cmm="New mesh");
+   59 :   	cout << "maxsK = " << maxsK << endl;
+   60 :   }
+   61 : 
+   62 : 	// Heaviside filtering
+   63 : 	if(heav && ii != maxit - 1){
+   64 :     plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
+   65 : 		real betaH = 10*(ii < 19) + 7*(ii == 19);
+   66 : 		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
+   67 :     plot(vHeav, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
+   68 :     v = vHeav;
+   69 : 	}
+   70 : 
+   71 : 	// Sigmund filtering
+   72 : 	if(sig && ii != maxit - 1){
+   73 : 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
+   74 : 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
+   75 : 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+   76 : 			plot(vSig, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
+   77 : 			v = vSig;
+   78 : 			beta += 1;
+   79 : 			eta += 0.02;
+   80 : 	}
+   81 : 
+   82 : 	// // Mesh adaptivity
+   83 : 	// if(meshad){
+   84 : 	// 	maxsK = 1;
+   85 : 	// 	ntold = Th.nt;
+   86 : 	// 	makemetrica(tau);
+   87 : 	// 	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000/*, periodic=[[2,y],[4,y],[1,x],[3,x]]*/);
+   88 : 	// 	savemesh (Th, "results/meshii"+ii+".msh" );
+   89 : 	// 	plot(Th, wait = 0, cmm="New mesh");
+   90 : 	// 	cout << "maxsK = " << maxsK << endl;
+   91 : 	// }
+   92 : 
+   93 :   // Mesh projection (only for mesh adaptivity)
+   94 :   if(meshad){
+   95 :   	v = v;
+   96 :   	xlb = xlb;
+   97 :   	xub = xub;
+   98 :   	gvi = gvi;
+   99 :   	gvj = 0:Xhp.ndof-1;
+  100 :   	lz = lz;
+  101 :   	uz = uz;
+  102 :   	m11 = m11;
+  103 :   	m12 = m12;
+  104 :   	m22 = m22;
+  105 : 
+  106 :   	stopmesh = abs(Th.nt - real(ntold))/ntold;
+  107 :   }
+  108 : 
+  109 : 	ii += 1;
+  110 : 
+  111 : 	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
+  112 : 
+  113 : 	{
+  114 : 	ofstream fout("results/"+ii+"_density.txt");
+  115 : 	fout << v[];
+  116 : 	}
+  117 : 	plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density.ps", cmm = "Density "+ii);
+  118 : 	savevtk("results/"+ii+"_density.vtk", Th, v, dataname="Density", order=ffordervel);
+  119 : 
+  120 : 	outnu << nu12 << endl;
+  121 : }
+  122 : 
+  123 : cout << Th.nt << endl;
+  124 : 
+  125 : plot(v,  wait = 0, fill = 1, value = 1, ps = "results/final_density.ps", cmm = "Final Density");
+  126 : 
+  127 : include "checknu.edp"//Construct a 2x2 material
+    2 : //compute nu on the structure obtained
+    3 : 
+    4 : //cell mesh Th
+    5 : //cell density v
+    6 : plot(v,  wait = 0, fill = 1, ps = "results/final_density_one_cell.p
+  ... : s", cmm = "Final Density in 1 cell");
+    7 : 
+    8 : mesh Th2 = square(2*n , 2*n , [2*x-1, 2*y-1]); // [-1,1]^2 //HOW TO CHOOSE FROM WHAT Th2 START?
+    9 : fespace Xh2(Th2, P1);
+   10 : Xh2 v2; // densità su Th2
+   11 : 
+   12 : for(int i = 0; i < Th2.nt; i++)
+   13 :   for(int j = 0; j < 3; j++)
+   14 :     if      (Th2[i][j].x >= 0 & Th2[i][j].y >= 0) v2[][Xh2(i,j)] = v( Th2[i][j].x, Th2[i][j].y);
+   15 :     else if (Th2[i][j].x <  0 & Th2[i][j].y >= 0) v2[][Xh2(i,j)] = v(-Th2[i][j].x, Th2[i][j].y);
+   16 :     else if (Th2[i][j].x <  0 & Th2[i][j].y <  0) v2[][Xh2(i,j)] = v(-Th2[i][j].x,-Th2[i][j].y);
+   17 :     else                                          v2[][Xh2(i,j)] = v( Th2[i][j].x,-Th2[i][j].y);
+   18 : plot(v2, fill = 1,  wait = 1);
+   19 : // traslo nel primo quadrante: così Th2 da [-1,1]^2 diventa la nuova "unit cell" [0,2]^2
+   20 : Xh2 u2x =1, u2y = 1;
+   21 : real [int] v2old = v2[];
+   22 : Th2 = movemesh(Th2,[x+u2x,y+u2y]);
+   23 : v2 = v2;
+   24 : v2[] = v2old;
+   25 : plot(v2, fill = 1, wait = 0, ps = "results/final_density_after_shif
+  ... : t.ps", cmm = "Final Density after shift");
+   26 : 
+   27 : //Compute nu Poisson coefficient to check our results
+   28 : //Solve primal problem: with v2, on Th2?
+   29 : fespace Vh2(Th2, [P1, P1]);
+   30 : Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
+   31 : 
+   32 : problem primallinearized([varu21,varu22], [psi21, psi22]) =
+   33 :   int2d(Th2) (v2^q * L * (2.0*detF(u210,u220)        
+   24 :  (F11(u210,u220)     (1.0 + grad11(u210,u220)   (dx(u210)) )  * F22(u210,u220)     (1.0 + grad22(u210,u220)   (dy(u220)) )  - F12(u210,u220)     (0.0 + grad12(u210,u220)   (dy(u210)) )  * F21(u210,u220)     (0.0 + grad21(u210,u220)   (dx(u220)) )  )
+   24 : -1.) * (dx(psi21)*F22(u210,u220)     (1.0 + grad22(u210,u220)   (dy(u220)) )  + dy(psi22)*F11(u210,u220)     (1.0 + grad11(u210,u220)   (dx(u210)) )  - dy(psi21)*F21(u210,u220)     (0.0 + grad21(u210,u220)   (dx(u220)) )  - dx(psi22)*F12(u210,u220)     (0.0 + grad12(u210,u220)   (dy(u210)) ) )
+   34 :                                         * (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) ))  * gradE11(u210,u220,varu21,varu22)       (grad11(u210,u220)   (dx(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(u210,u220)   (dx(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad11(varu21,varu22)   (dx(varu21)) )  + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * gradE12(u210,u220,varu21,varu22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )
+   35 :                                         +  invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * gradE21(u210,u220,varu21,varu22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )   + invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  * gradE22(u210,u220,varu21,varu22)       (grad12(u210,u220)   (dy(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(u210,u220)   (dy(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad22(varu21,varu22)   (dy(varu22)) ) )
+   36 : 
+   37 :            + v2^q * L * (detF(u210,u220)        
+   24 :  (F11(u210,u220)     (1.0 + grad11(u210,u220)   (dx(u210)) )  * F22(u210,u220)     (1.0 + grad22(u210,u220)   (dy(u220)) )  - F12(u210,u220)     (0.0 + grad12(u210,u220)   (dy(u210)) )  * F21(u210,u220)     (0.0 + grad21(u210,u220)   (dx(u220)) )  )
+   24 : -1) * detF(u210,u220)        
+   24 :  (F11(u210,u220)     (1.0 + grad11(u210,u220)   (dx(u210)) )  * F22(u210,u220)     (1.0 + grad22(u210,u220)   (dy(u220)) )  - F12(u210,u220)     (0.0 + grad12(u210,u220)   (dy(u210)) )  * F21(u210,u220)     (0.0 + grad21(u210,u220)   (dx(u220)) )  )
+   24 :  * ( - D1111(u210,u220)      (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) ))  * 2 )  * gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) )  * gradE11(u210,u220,varu21,varu22)       (grad11(u210,u220)   (dx(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(u210,u220)   (dx(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad11(varu21,varu22)   (dx(varu21)) ) 
+   38 :                                                        - D1112(u210,u220)      (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) ) * gradE11(u210,u220,varu21,varu22)       (grad11(u210,u220)   (dx(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(u210,u220)   (dx(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad11(varu21,varu22)   (dx(varu21)) ) 
+   39 :                                                        - D1121(u210,u220)      (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )   * gradE11(u210,u220,varu21,varu22)       (grad11(u210,u220)   (dx(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(u210,u220)   (dx(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad11(varu21,varu22)   (dx(varu21)) ) 
+   40 :                                                        - D1122(u210,u220)      (invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) *invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) )  * gradE11(u210,u220,varu21,varu22)       (grad11(u210,u220)   (dx(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(u210,u220)   (dx(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad11(varu21,varu22)   (dx(varu21)) )  + invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) ))  * grad2E11(psi21,psi22,varu21,varu22)     (grad11(psi21,psi22)   (dx(psi21)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(psi21,psi22)   (dx(psi22)) *grad21(varu21,varu22)   (dx(varu22)) ) 
+   41 :                                                        - D1211(u210,u220)      (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) )  * gradE12(u210,u220,varu21,varu22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )
+   42 :                                                        - D1212(u210,u220)     (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) )  * gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) ) * gradE12(u210,u220,varu21,varu22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )
+   43 :                                                        - D1221(u210,u220)     (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) )  * gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )   * gradE12(u210,u220,varu21,varu22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )
+   44 :                                                        - D1222(u210,u220)      (invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) )) *invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) )  * gradE12(u210,u220,varu21,varu22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) ) + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * grad2E12(psi21,psi22,varu21,varu22)         (0.5*(grad11(psi21,psi22)   (dx(psi21)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(psi21,psi22)   (dx(psi22)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(psi21,psi22)   (dy(psi21)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(psi21,psi22)   (dy(psi22)) *grad21(varu21,varu22)   (dx(varu22)) )) 
+   45 :                                                        - D2111(u210,u220)      (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) )  * gradE21(u210,u220,varu21,varu22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )  
+   46 :                                                        - D2112(u210,u220)     (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) )  * gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) ) * gradE21(u210,u220,varu21,varu22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )  
+   47 :                                                        - D2121(u210,u220)     (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) )) *invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) )  * gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )   * gradE21(u210,u220,varu21,varu22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )  
+   48 :                                                        - D2122(u210,u220)      (invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) )) *invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) )  * gradE21(u210,u220,varu21,varu22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )   + invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * grad2E21(psi21,psi22,varu21,varu22)         (0.5*(grad11(psi21,psi22)   (dx(psi21)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(psi21,psi22)   (dx(psi22)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(psi21,psi22)   (dy(psi21)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(psi21,psi22)   (dy(psi22)) *grad21(varu21,varu22)   (dx(varu22)) )) 
+   49 :                                                        - D2211(u210,u220)      (invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) )  * gradE22(u210,u220,varu21,varu22)       (grad12(u210,u220)   (dy(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(u210,u220)   (dy(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad22(varu21,varu22)   (dy(varu22)) ) 
+   50 :                                                        - D2212(u210,u220)      (invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) ) * gradE22(u210,u220,varu21,varu22)       (grad12(u210,u220)   (dy(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(u210,u220)   (dy(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad22(varu21,varu22)   (dy(varu22)) ) 
+   51 :                                                        - D2221(u210,u220)      (invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) )) *invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * 2 )  * gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )   * gradE22(u210,u220,varu21,varu22)       (grad12(u210,u220)   (dy(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(u210,u220)   (dy(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad22(varu21,varu22)   (dy(varu22)) ) 
+   52 :                                                        - D2222(u210,u220)      (invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) )) *invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  * 2 )  * gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) )  * gradE22(u210,u220,varu21,varu22)       (grad12(u210,u220)   (dy(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(u210,u220)   (dy(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad22(varu21,varu22)   (dy(varu22)) )  + invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  * grad2E22(psi21,psi22,varu21,varu22)     (grad12(psi21,psi22)   (dy(psi21)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(psi21,psi22)   (dy(psi22)) *grad22(varu21,varu22)   (dy(varu22)) ) 
+   53 :                                                    )
+   54 : 
+   55 :             + v2^q * 2.0*M* (gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) )  * gradE11(u210,u220,varu21,varu22)       (grad11(u210,u220)   (dx(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(u210,u220)   (dx(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad11(varu21,varu22)   (dx(varu21)) )  + E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  * grad2E11(psi21,psi22,varu21,varu22)     (grad11(psi21,psi22)   (dx(psi21)) *grad11(varu21,varu22)   (dx(varu21))  + grad21(psi21,psi22)   (dx(psi22)) *grad21(varu21,varu22)   (dx(varu22)) )  +
+   56 :                             gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) ) * gradE12(u210,u220,varu21,varu22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) ) + E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) )  * grad2E12(psi21,psi22,varu21,varu22)         (0.5*(grad11(psi21,psi22)   (dx(psi21)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(psi21,psi22)   (dx(psi22)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(psi21,psi22)   (dy(psi21)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(psi21,psi22)   (dy(psi22)) *grad21(varu21,varu22)   (dx(varu22)) ))  +
+   57 :                             gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )   * gradE21(u210,u220,varu21,varu22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(u210,u220)   (dx(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(u210,u220)   (dy(u210)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(u210,u220)   (dy(u220)) *grad21(varu21,varu22)   (dx(varu22))  + grad12(varu21,varu22)   (dy(varu21))  + grad21(varu21,varu22)   (dx(varu22)) ) )   + E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) )  * grad2E21(psi21,psi22,varu21,varu22)         (0.5*(grad11(psi21,psi22)   (dx(psi21)) *grad12(varu21,varu22)   (dy(varu21))  + grad21(psi21,psi22)   (dx(psi22)) *grad22(varu21,varu22)   (dy(varu22))  + grad12(psi21,psi22)   (dy(psi21)) *grad11(varu21,varu22)   (dx(varu21))  + grad22(psi21,psi22)   (dy(psi22)) *grad21(varu21,varu22)   (dx(varu22)) ))  +
+   58 :                             gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) )  * gradE22(u210,u220,varu21,varu22)       (grad12(u210,u220)   (dy(u210)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(u210,u220)   (dy(u220)) *grad22(varu21,varu22)   (dy(varu22))  + grad22(varu21,varu22)   (dy(varu22)) )  + E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  * grad2E22(psi21,psi22,varu21,varu22)     (grad12(psi21,psi22)   (dy(psi21)) *grad12(varu21,varu22)   (dy(varu21))  + grad22(psi21,psi22)   (dy(psi22)) *grad22(varu21,varu22)   (dy(varu22)) )  )
+   59 :            )
+   60 : 
+   61 :     + int2d(Th2) (v2^q * L*detF(u210,u220)        
+   24 :  (F11(u210,u220)     (1.0 + grad11(u210,u220)   (dx(u210)) )  * F22(u210,u220)     (1.0 + grad22(u210,u220)   (dy(u220)) )  - F12(u210,u220)     (0.0 + grad12(u210,u220)   (dy(u210)) )  * F21(u210,u220)     (0.0 + grad21(u210,u220)   (dx(u220)) )  )
+   24 : *(detF(u210,u220)        
+   24 :  (F11(u210,u220)     (1.0 + grad11(u210,u220)   (dx(u210)) )  * F22(u210,u220)     (1.0 + grad22(u210,u220)   (dy(u220)) )  - F12(u210,u220)     (0.0 + grad12(u210,u220)   (dy(u210)) )  * F21(u210,u220)     (0.0 + grad21(u210,u220)   (dx(u220)) )  )
+   24 : -1.) * (invC11(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0) ))  * gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) ) 
+   62 :                                                            + invC12(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )
+   63 :                                                            + invC21(u210,u220)      (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * ((-1)* C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) ))  * gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )  
+   64 :                                                            + invC22(u210,u220)     (1/detC(u210,u220)       
+   32 :  (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0)  * C22(u210,u220)     (2*E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  + 1.0)  - C12(u210,u220)   (2*E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) )  * C21(u210,u220)   (2*E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) ) ) )
+   32 :  * (C11(u210,u220)     (2*E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  + 1.0) ))  * gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) ) )
+   65 :                 + v2^q * 2.0 * M * (E11(u210,u220)       0.5*(grad11(u210,u220)   (dx(u210)) *grad11(u210,u220)   (dx(u210))  + 2.*grad11(u210,u220)   (dx(u210))  + grad21(u210,u220)   (dx(u220)) *grad21(u210,u220)   (dx(u220)) )  * gradE11(u210,u220,psi21,psi22)       (grad11(u210,u220)   (dx(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad21(u210,u220)   (dx(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad11(psi21,psi22)   (dx(psi21)) ) 
+   66 :                                  + E12(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) )  * gradE12(u210,u220,psi21,psi22)             (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )
+   67 :                                  + E21(u210,u220)         0.5*(grad11(u210,u220)   (dx(u210)) *grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) *grad22(u210,u220)   (dy(u220))  + grad12(u210,u220)   (dy(u210))  + grad21(u210,u220)   (dx(u220)) )  * gradE21(u210,u220,psi21,psi22)               (0.5*(grad11(u210,u220)   (dx(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad21(u210,u220)   (dx(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad12(u210,u220)   (dy(u210)) *grad11(psi21,psi22)   (dx(psi21))  + grad22(u210,u220)   (dy(u220)) *grad21(psi21,psi22)   (dx(psi22))  + grad12(psi21,psi22)   (dy(psi21))  + grad21(psi21,psi22)   (dx(psi22)) ) )  
+   68 :                                  + E22(u210,u220)       0.5*(grad12(u210,u220)   (dy(u210)) *grad12(u210,u220)   (dy(u210))  + 2.*grad22(u210,u220)   (dy(u220))  + grad22(u210,u220)   (dy(u220)) *grad22(u210,u220)   (dy(u220)) )  * gradE22(u210,u220,psi21,psi22)       (grad12(u210,u220)   (dy(u210)) *grad12(psi21,psi22)   (dy(psi21))  + grad22(u210,u220)   (dy(u220)) *grad22(psi21,psi22)   (dy(psi22))  + grad22(psi21,psi22)   (dy(psi22)) ) ))
+   69 :     + on(2,varu21=0) // Dirichlet
+   70 :     + on(1,varu22=0) // symmetric BC
+   71 :     + on(4,varu21=0) // symmetric BC
+   72 :   ;
+   73 : 
+   74 : // Residual for Newton method
+   75 : func real errorL2()
+   76 : {
+   77 :  err21[] = u1[];
+   78 :  err21[] -= u210[];
+   79 : 
+   80 :  real erru = int2d(Th2)(err21^2 + err22^2);
+   81 :  real normu = int2d(Th2)(u210^2 + u220^2);
+   82 :  // return error estimate (stopping criterion)
+   83 :  return sqrt(erru / (normu+1e-15));
+   84 : }
+   85 : 
+   86 : // Newton initialization ?
+   87 : [u210, u220] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+   88 : [u21, u22] = [u210, u220]; // u_1
+   89 : real tol = 1.e-12;
+   90 : real res = 2. * tol;
+   91 : int loopcount = 0;
+   92 : int loopmax = 100;
+   93 : real alpha = 1.0;
+   94 : 
+   95 : // Iterations
+   96 : while (loopcount <= loopmax && res >= tol){
+   97 :     loopcount ++;
+   98 :     cout << "Newton iteration " << loopcount << endl;
+   99 :     // Solve
+  100 :     primallinearized;
+  101 :     // Update
+  102 :     u21[] += alpha * varu21[];// u_k+1 = u_k + delta_u
+  103 :     // update error for the stopping criterion
+  104 :     res = errorL2();
+  105 :     //Update old solution
+  106 :     u210[] = u21[];
+  107 : }
+  108 : 
+  109 : real d2 = int1d(Th2,3)(u2);
+  110 : nu12 = - d2 / d1; // estimated nu
+  111 : 
+  112 : cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
+  113 : cout << "*********************************************" << endl;
+  114 : ;
+  128 :  sizestack + 1024 =487296  ( 486272 )
+
+  --  mesh:  Nb of Triangles =   3876, Nb of Vertices 2011
+
+
+*********************************************
+case1_nonlinear.edp - Params
+*********************************************
+Loaded: 1
+Loaded path: results/2021-05-18_09-54-42/
+Loaded idx: 6
+nu: 0.3
+lambda: 0.32967
+mu: 0.384615
+Young modulus: 1
+-----
+Given horizontal traction on R: 0.3
+nu target: -1
+Volume fraction: 0.4
+-----
+Initial density: hard-coded
+-----
+IPOPT max iterations: 50
+-----
+Power law: 0
+q: 3
+qmax: 3
+-----
+Helmholtz filtering: 1
+Helmholtz radius: 0.00015625
+-----
+Heaviside filtering: 0
+-----
+Mesh adaptivity: 1
+Mesh tolerance: 0.0001
+tau: 1e-05
+-----
+Sigmund filtering: 1
+beta: 6.5
+eta fixed: 0.51
+-----
+Main cycle max iterations: 6
+
+
+*********************************************
+case1_nonlinear.edp - Solution
+*********************************************
+  number of required edges : 0
+3876
+  -- Square mesh : nb vertices  =3721 ,  nb triangles = 7200 ,  nb boundary edges 240
+Newton iteration 1
+  -- Solve : 
+          min -0.141316  max 0.2147
+Newton iteration 2
+  -- Solve : 
+          min -0.0951193  max 0.315345
+Newton iteration 3
+  -- Solve : 
+          min -0.0673939  max 0.135456
+Newton iteration 4
+  -- Solve : 
+          min -0.0536826  max 0.0859086
+Newton iteration 5
+  -- Solve : 
+          min -0.0310262  max 0.0336102
+Newton iteration 6
+  -- Solve : 
+          min -0.0241236  max 0.0188387
+Newton iteration 7
+  -- Solve : 
+          min -0.0163512  max 0.0144485
+Newton iteration 8
+  -- Solve : 
+          min -0.009839  max 0.00779959
+Newton iteration 9
+  -- Solve : 
+          min -0.00572589  max 0.00347158
+Newton iteration 10
+  -- Solve : 
+          min -0.00168964  max 0.000698179
+Newton iteration 11
+  -- Solve : 
+          min -0.000347607  max 7.28583e-05
+Newton iteration 12
+  -- Solve : 
+          min -8.98999e-06  max 2.0628e-06
+Newton iteration 13
+  -- Solve : 
+          min -8.42044e-09  max 1.87306e-09
+Newton iteration 14
+  -- Solve : 
+          min -5.36871e-15  max 1.42415e-15
+Newton iteration 15
+  -- Solve : 
+          min -4.72704e-16  max 2.81013e-16
+Newton iteration 16
+  -- Solve : 
+          min -4.92616e-16  max 3.26453e-16
+Newton iteration 17
+  -- Solve : 
+          min -5.4209e-16  max 7.48731e-16
+Newton iteration 18
+  -- Solve : 
+          min -7.31569e-16  max 6.76387e-16
+Newton iteration 19
+  -- Solve : 
+          min -1.0033e-15  max 1.50674e-15
+Newton iteration 20
+  -- Solve : 
+          min -1.1476e-15  max 8.54306e-16
+Newton iteration 21
+  -- Solve : 
+          min -7.67127e-16  max 7.93652e-16
+Newton iteration 22
+  -- Solve : 
+          min -7.67084e-16  max 7.45376e-16
+Newton iteration 23
+  -- Solve : 
+          min -4.62188e-16  max 3.13969e-16
+Newton iteration 24
+  -- Solve : 
+          min -3.44989e-16  max 5.31098e-16
+Newton iteration 25
+  -- Solve : 
+          min -4.24141e-16  max 6.07166e-16
+Newton iteration 26
+  -- Solve : 
+          min -1.07802e-15  max 7.44569e-16
+Newton iteration 27
+  -- Solve : 
+          min -5.34492e-16  max 7.69058e-16
+Newton iteration 28
+  -- Solve : 
+          min -6.8072e-16  max 4.51703e-16
+Newton iteration 29
+  -- Solve : 
+          min -4.63912e-16  max 2.7102e-16
+Newton iteration 30
+  -- Solve : 
+          min -1.97049e-16  max 1.03495e-15
+Newton iteration 31
+  -- Solve : 
+          min -9.43544e-16  max 9.93708e-16
+Newton iteration 32
+  -- Solve : 
+          min -8.81643e-16  max 6.44803e-16
+Newton iteration 33
+  -- Solve : 
+          min -5.30792e-16  max 7.89795e-16
+Newton iteration 34
+  -- Solve : 
+          min -4.86363e-16  max 3.98335e-16
+Newton iteration 35
+  -- Solve : 
+          min -5.25684e-16  max 5.9146e-16
+Newton iteration 36
+  -- Solve : 
+          min -8.85699e-16  max 5.47611e-16
+Newton iteration 37
+  -- Solve : 
+          min -6.03589e-16  max 1.2774e-15
+Newton iteration 38
+  -- Solve : 
+          min -8.25918e-16  max 5.06528e-16
+Newton iteration 39
+  -- Solve : 
+          min -5.50835e-16  max 4.13536e-16
+Newton iteration 40
+  -- Solve : 
+          min -6.02076e-16  max 5.04074e-16
+Newton iteration 41
+  -- Solve : 
+          min -7.87304e-16  max 4.54022e-16
+Newton iteration 42
+  -- Solve : 
+          min -3.96683e-16  max 7.83254e-16
+Newton iteration 43
+  -- Solve : 
+          min -5.78672e-16  max 1.6976e-16
+Newton iteration 44
+  -- Solve : 
+          min -5.51596e-16  max 9.70268e-16
+Newton iteration 45
+  -- Solve : 
+          min -5.496e-16  max 4.22145e-16
+Newton iteration 46
+  -- Solve : 
+          min -1.00775e-15  max 9.27592e-16
+Newton iteration 47
+  -- Solve : 
+          min -6.40655e-16  max 1.177e-15
+Newton iteration 48
+  -- Solve : 
+          min -4.06644e-16  max 5.43425e-16
+Newton iteration 49
+  -- Solve : 
+          min -8.32536e-16  max 4.48111e-16
+Newton iteration 50
+  -- Solve : 
+          min -6.37543e-16  max 1.15097e-15
+Newton iteration 51
+  -- Solve : 
+          min -5.58996e-16  max 7.90353e-16
+Newton iteration 52
+  -- Solve : 
+          min -8.74053e-16  max 6.08633e-16
+Newton iteration 53
+  -- Solve : 
+          min -2.0654e-16  max 3.74791e-16
+Newton iteration 54
+  -- Solve : 
+          min -5.94204e-16  max 4.50246e-16
+Newton iteration 55
+  -- Solve : 
+          min -5.65527e-16  max 8.85576e-16
+Newton iteration 56
+  -- Solve : 
+          min -2.74864e-16  max 4.67777e-16
+Newton iteration 57
+  -- Solve : 
+          min -6.5384e-16  max 2.93284e-16
+Newton iteration 58
+  -- Solve : 
+          min -7.85611e-16  max 5.26883e-16
+Newton iteration 59
+  -- Solve : 
+          min -9.03403e-16  max 1.23773e-15
+Newton iteration 60
+  -- Solve : 
+          min -7.25263e-16  max 3.43269e-16
+Newton iteration 61
+  -- Solve : 
+          min -5.34128e-16  max 5.36559e-16
+Newton iteration 62
+  -- Solve : 
+          min -4.36486e-16  max 3.70676e-16
+Newton iteration 63
+  -- Solve : 
+          min -3.42011e-16  max 3.13621e-16
+Newton iteration 64
+  -- Solve : 
+          min -4.90631e-16  max 9.95583e-16
+Newton iteration 65
+  -- Solve : 
+          min -7.29349e-16  max 8.07914e-16
+Newton iteration 66
+  -- Solve : 
+          min -7.14994e-16  max 5.02236e-16
+Newton iteration 67
+  -- Solve : 
+          min -7.32847e-16  max 5.40514e-16
+Newton iteration 68
+  -- Solve : 
+          min -2.94375e-16  max 3.26701e-16
+Newton iteration 69
+  -- Solve : 
+          min -5.0187e-16  max 6.23718e-16
+Newton iteration 70
+  -- Solve : 
+          min -4.79048e-16  max 4.64366e-16
+Newton iteration 71
+  -- Solve : 
+          min -7.19113e-16  max 4.47946e-16
+Newton iteration 72
+  -- Solve : 
+          min -4.1114e-16  max 6.36108e-16
+Newton iteration 73
+  -- Solve : 
+          min -3.06789e-16  max 7.40221e-16
+Newton iteration 74
+  -- Solve : 
+          min -2.80609e-16  max 3.92278e-16
+Newton iteration 75
+  -- Solve : 
+          min -5.30722e-16  max 4.7992e-16
+Newton iteration 76
+  -- Solve : 
+          min -5.59768e-16  max 8.9232e-16
+Newton iteration 77
+  -- Solve : 
+          min -7.74237e-16  max 1.1187e-15
+Newton iteration 78
+  -- Solve : 
+          min -5.92993e-16  max 3.50499e-16
+Newton iteration 79
+  -- Solve : 
+          min -9.06355e-16  max 7.90897e-16
+Newton iteration 80
+  -- Solve : 
+          min -5.11035e-16  max 4.40418e-16
+Newton iteration 81
+  -- Solve : 
+          min -3.76538e-16  max 1.01938e-15
+Newton iteration 82
+  -- Solve : 
+          min -6.49433e-16  max 3.81181e-16
+Newton iteration 83
+  -- Solve : 
+          min -4.74936e-16  max 2.92587e-16
+Newton iteration 84
+  -- Solve : 
+          min -5.55207e-16  max 8.04383e-16
+Newton iteration 85
+  -- Solve : 
+          min -5.38862e-16  max 4.76025e-16
+Newton iteration 86
+  -- Solve : 
+          min -5.62132e-16  max 5.55171e-16
+Newton iteration 87
+  -- Solve : 
+          min -5.28244e-16  max 4.79514e-16
+Newton iteration 88
+  -- Solve : 
+          min -4.38037e-16  max 2.97261e-16
+Newton iteration 89
+  -- Solve : 
+          min -3.50988e-16  max 1.02129e-15
+Newton iteration 90
+  -- Solve : 
+          min -6.9508e-16  max 2.0744e-16
+Newton iteration 91
+  -- Solve : 
+          min -4.0413e-16  max 2.36433e-16
+Newton iteration 92
+  -- Solve : 
+          min -3.40591e-16  max 5.21076e-16
+Newton iteration 93
+  -- Solve : 
+          min -8.19302e-16  max 5.34422e-16
+Newton iteration 94
+  -- Solve : 
+          min -6.72763e-16  max 9.63389e-16
+Newton iteration 95
+  -- Solve : 
+          min -8.07233e-16  max 9.85503e-16
+Newton iteration 96
+  -- Solve : 
+          min -8.14804e-16  max 5.45489e-16
+Newton iteration 97
+  -- Solve : 
+          min -3.35706e-16  max 7.63137e-16
+Newton iteration 98
+  -- Solve : 
+          min -6.78721e-16  max 4.51714e-16
+Newton iteration 99
+  -- Solve : 
+          min -4.87101e-16  max 7.19134e-16
+Newton iteration 100
+  -- Solve : 
+          min -3.66762e-16  max 5.5112e-16
+Newton iteration 101
+  -- Solve : 
+          min -6.81879e-16  max 3.96696e-16
+FINAL POISSON'S RATIO = -0
+*********************************************
+times: compile 0.2074s, execution 331.603s,  mpirank:0
+ CodeAlloc : nb ptr  31686,  size :1381152 mpirank: 0
+Ok: Normal End

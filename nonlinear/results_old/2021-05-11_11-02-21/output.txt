@@ -1,0 +1,1176 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+    1 : load "ff-Ipopt";
+    2 : load "ffrandom";
+    3 : load "iovtk" load: iovtk 
+;
+    4 : 
+    5 : int ii = 100;
+    6 : int jj = 0;
+    7 : 
+    8 : include "macros.edp"// ***************************************************************************
+    2 : // Macros
+    3 : // ***************************************************************************
+    4 : // Gradient of a vector field (u1, u2)
+    5 : macro grad11(u1, u2) (dx(u1))  )   (dx(u1)) //
+    6 : macro grad12(u1, u2) (dy(u1))  )   (dy(u1)) //
+    7 : macro grad21(u1, u2) (dx(u2))  )   (dx(u2)) //
+    8 : macro grad22(u1, u2) (dy(u2))  )   (dy(u2)) //
+    9 : // Deformation gradient F
+   10 : macro F11(u1,u2) (1.0 + grad11(u1,u2))  )   (1.0 + grad11(u1,u2)) //
+   11 : macro F12(u1,u2) (0.0 + grad12(u1,u2))  )   (0.0 + grad12(u1,u2)) //
+   12 : macro F21(u1,u2) (0.0 + grad21(u1,u2))  )   (0.0 + grad21(u1,u2)) //
+   13 : macro F22(u1,u2) (1.0 + grad22(u1,u2))  )   (1.0 + grad22(u1,u2)) //
+   14 : // Components Green-Lagrange strain tensor E
+   15 : macro E11(u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
+   16 : macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+   17 : macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+   18 : macro E22(u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2))  )   0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
+   19 : // Trace of Green-Lagrange tensor
+   20 : macro traceE(u1,u2)	(E11(u1,u2) + E22(u1,u2))
+   21 #  )  	(E11(u1,u2) + E22(u1,u2))
+   22 : // J: determinant of F
+   23 : macro detF(u1,u2) (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )
+   24 #  )   (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )
+   25 : //Right Cauchy-Green deformation tensor C
+   26 : macro C11(u1,u2) (2*E11(u1,u2) + 1.0)  )   (2*E11(u1,u2) + 1.0) //
+   27 : macro C12(u1,u2) (2*E12(u1,u2))  )   (2*E12(u1,u2)) //
+   28 : macro C21(u1,u2) (2*E21(u1,u2))  )   (2*E21(u1,u2)) //
+   29 : macro C22(u1,u2) (2*E22(u1,u2) + 1.0)  )   (2*E22(u1,u2) + 1.0) //
+   30 : // determinantof C
+   31 : macro detC(u1,u2) (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2))
+   32 #  )   (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2))
+   33 : //Inverse of C: C^-1 (symmetric)
+   34 : macro invC11(u1,u2) (1/detC(u1,u2) * (C22(u1,u2)))  )   (1/detC(u1,u2) * (C22(u1,u2))) //
+   35 : macro invC12(u1,u2) (1/detC(u1,u2) * ((-1)* C12(u1,u2)))  )   (1/detC(u1,u2) * ((-1)* C12(u1,u2))) //
+   36 : macro invC21(u1,u2) (1/detC(u1,u2) * ((-1)* C21(u1,u2)))  )   (1/detC(u1,u2) * ((-1)* C21(u1,u2))) //
+   37 : macro invC22(u1,u2) (1/detC(u1,u2) * (C11(u1,u2)))  )   (1/detC(u1,u2) * (C11(u1,u2))) //
+   38 : // Second Piola-Kirchhoff stress tensor for Phi4 Sij forse non serve ...
+   39 : // Dijkl = - d(Cij^-1)/dEkl
+   40 : macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2 )  )   (invC11(u1,u2)*invC11(u1,u2) * 2 ) //
+   41 : macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 )  )   (invC11(u1,u2)*invC21(u1,u2) * 2 ) // = D1121, D1112, D2111 for symmetry of C,invC and E
+   42 : macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 )  )   (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
+   43 : macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 )  )   (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
+   44 : macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 )  )   (invC11(u1,u2)*invC21(u1,u2) * 2 ) //
+   45 : macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2 )  )   (invC12(u1,u2)*invC12(u1,u2) * 2 ) // = D2211
+   46 : macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2 )  )   (invC21(u1,u2)*invC21(u1,u2) * 2 ) //
+   47 : macro D1212(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) // = D2121, D1221, D2112
+   48 : macro D2121(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   49 : macro D1221(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   50 : macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   51 : macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 )  )   (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
+   52 : macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 )  )   (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+   53 : macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 )  )   (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+   54 : macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 )  )   (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
+   55 : macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 )  )   (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
+   56 : //dEij(u1,u2)/du * lambda
+   57 : macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2))  )   (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
+   58 : macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) ) )   (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
+   59 : macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )   )   (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
+   60 : macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2))  )   (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2)) //
+   61 : //d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (test function)
+   62 : macro grad2E11 (phi1,phi2,l1,l2) (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2))  )   (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2)) //
+   63 : macro grad2E12 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2)))  )   (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+   64 : macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2)))  )   (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+   65 : macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2))  )   (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
+   66 : 
+    9 : include "params.edp"// ***************************************************************************
+    2 : // Params
+    3 : // ***************************************************************************
+    4 : 
+    5 : // Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
+    6 : int[int] ffordervel = [1];
+    7 : 
+    8 : // Load and mesh
+    9 : int ld = 1;
+   10 : string path = "results/best_results/2021-05-11_
+  ... : 09-14-50_SIGMA_STRUCTURE/";
+   11 : int idxld = 6; //index of the density from which you want to start
+   12 : mesh Th;
+   13 : int n = 30;
+   14 : 
+   15 : if(ld) {
+   16 :   Th = readmesh(path+"mesh_initial.msh");
+   17 :   plot(Th, wait = 0, cmm="Loaded mesh");
+   18 : } else {
+   19 :   Th = square(n, n, [x, y]);
+   20 : }
+   21 : 
+   22 : // Params
+   23 : real nu12;
+   24 : real nu = 0.3;
+   25 : real E = 1.;
+   26 : real L = E*nu/(1-nu^2);
+   27 : real M = E/(2*(1+nu));
+   28 : real d1 = 0.3;        // u traction given
+   29 : real vf = 0.4;       // volume fraction
+   30 : real nutarget = -1.0; // nu target
+   31 : 
+   32 : // Density space
+   33 : fespace Xhp(Th,P1);
+   34 : // fespace Xhp(Th, P1, periodic = [[2,y],[4,y],[1,x],[3,x]]);
+   35 : Xhp v,     // density
+   36 :     vHelm, // Helmholtz filtered density
+   37 :     vHeav, // Heaviside filtered density
+   38 :     vSig,   // Sigmund tanh filtered density
+   39 :     wSig,  // Sigmund tanh filtered density (internal)
+   40 :     psi,
+   41 :     lz,
+   42 :     uz;     // density, filtered density, test density, params for IPOPT
+   43 : Xhp m11, m12, m22; // metric computation utilities
+   44 : 
+   45 : // Displacement space
+   46 : fespace Vh(Th, [P1, P1]);
+   47 : Vh [u1,u2],       // displacement
+   48 :    [u10,u20] = [d1*x,0],     // old displacement (for Newton)
+   49 :    [psi1,psi2],   // test displacement
+   50 :    [varu1,varu2], // displacement increments (for Newton)
+   51 :    [err1,err2],   // errors (for Newton)
+   52 :    [l1, l2],      // lambda
+   53 :    [phi1, phi2];  // test lambda
+   54 : // Area space
+   55 : fespace Xh0(Th, P0); // periodic = [[2,y],[4,y],[1,x],[3,x]]);
+   56 : Xh0 vol = area;
+   57 : real Volume = int2d(Th)(1.);
+   58 : 
+   59 : // IPOPT params
+   60 : real [int] lm(1);
+   61 : int IPOPTmaxiter = 50;
+   62 : int[int] gvi(Xhp.ndof), gvj = 0:Xhp.ndof-1;
+   63 : gvi = 0;
+   64 : Xhp xlb = 1e-4, xub = 1; // lower and upper bounds for v density
+   65 : real tolv = 0.;
+   66 : real[int] clb = [0*vf*Volume], cub = [vf*Volume]; // lower and upper bounds for constraint
+   67 : real IPOPTtol = 1e-3;
+   68 : 
+   69 : // Inital density
+   70 : int rnd = 0;
+   71 : int seed = 10;
+   72 : if (ld) {
+   73 :   ifstream fu(path+idxld+"_density.txt");
+   74 :   fu >> v[];
+   75 :   plot(v, wait = 0, fill=1, cmm="Loaded density");
+   76 : } else if (rnd) {
+   77 :   srandom(seed);
+   78 :   for(int ii = 0; ii < Xhp.ndof; ii++) v[][ii] = random()/3e9;
+   79 :   plot(v, fill = 1, cmm="Initial density", wait=0);
+   80 : } else {
+   81 :   // v = 0.5;
+   82 :   // v = (x<=0.5)*(y>=0.5)*(y<=0.7);
+   83 :   // v = 5*abs((x-0.5)^2 + (y-0.5)^2 + 0.^8);
+   84 :   // v = (1 - xlb) * 0.5*abs(sin(2*pi*(x-0.5))*sin(2*pi*(y-0.5))) + xlb;
+   85 :   // v = (1 - xlb) * abs(sin(0.5*pi*x)*sin(1*pi*y)) + xlb;
+   86 :   v = (1 - xlb) * cos(pi*(x-0.5))*cos(pi*(y-0.5)) + xlb;
+   87 :   plot(v, fill = 1, cmm="Initial density", wait=0);
+   88 : }
+   89 : 
+   90 : // Power penalty
+   91 : int pen = 0;
+   92 : real q = 3.;
+   93 : real qmax = 3.;
+   94 : 
+   95 : // Helmholtz filtering
+   96 : int helm = 0;
+   97 : real radius = 1./80^2; // filtering radius
+   98 : 
+   99 : // Heaviside filtering
+  100 : int heav = 0;
+  101 : 
+  102 : // Main params
+  103 : int maxit = 12;
+  104 : 
+  105 : // Sigmund filtering
+  106 : int sig = 1;
+  107 : int sigIN = 0; //attiva il filtro di Sigmund dentro J e gradJ -> occhio a beta e eta ...
+  108 : real betamax = 1.5;
+  109 : real betamin = 1e-3;
+  110 : // real beta = betamax / (2.^12); // beta raddoppia ad ogni ii/jj fino a beta_max raggiunto a iterazione 20?
+  111 : real beta = 3.5;
+  112 : real eta = 0.45;
+  113 : 
+  114 : // Mesh adaptivity
+  115 : int meshad = 0;
+  116 : real tolmesh = 0.0001;
+  117 : real stopmesh = tolmesh + 1.;
+  118 : real tau = .00001;
+  119 : real maxsK;
+  120 : int ntold = Th.nt;
+  121 : ;
+   10 : include "print_params.edp"// ***************************************************************************
+    2 : // Print params
+    3 : // ***************************************************************************
+    4 : cout << endl << endl;
+    5 : 
+    6 : cout << "*********************************************" << endl;
+    7 : cout << "case1_nonlinear.edp - Params" << endl;
+    8 : cout << "*********************************************" << endl;
+    9 : cout << "Loaded: " << ld << endl;
+   10 : if(ld) {
+   11 :   cout << "Loaded path: " << path << endl;
+   12 :   cout << "Loaded idx: " << idxld << endl;
+   13 : } else {
+   14 :   cout << "Mesh size: " << n << " x " << n << endl;
+   15 : }
+   16 : cout << "nu: " << nu << endl;
+   17 : cout << "lambda: " << L << endl;
+   18 : cout << "mu: " << M <<  endl;
+   19 : cout << "Young modulus: " << E << endl;
+   20 : 
+   21 : cout << "-----" << endl;
+   22 : 
+   23 : cout << "Given horizontal traction on R: " << d1 <<  endl;
+   24 : cout << "nu target: " << nutarget <<  endl;
+   25 : cout << "Volume fraction: " << vf <<  endl;
+   26 : 
+   27 : cout << "-----" << endl;
+   28 : 
+   29 : cout << "Initial density: ";
+   30 : if (rnd) cout << "random with seed = " << seed << endl;
+   31 : else cout << "hard-coded" << endl;
+   32 : 
+   33 : cout << "-----" << endl;
+   34 : 
+   35 : cout << "IPOPT max iterations: " << IPOPTmaxiter <<  endl;
+   36 : 
+   37 : cout << "-----" << endl;
+   38 : 
+   39 : cout << "Power law: " << pen <<  endl;
+   40 : cout << "q: " << q << endl;
+   41 : cout << "qmax: " << qmax << endl;
+   42 : 
+   43 : cout << "-----" << endl;
+   44 : 
+   45 : cout << "Helmholtz filtering: " << helm <<  endl;
+   46 : if(helm) cout << "Helmholtz radius: " << radius <<  endl;
+   47 : 
+   48 : cout << "-----" << endl;
+   49 : 
+   50 : cout << "Heaviside filtering: " << heav <<  endl;
+   51 : 
+   52 : cout << "-----" << endl;
+   53 : 
+   54 : cout << "Mesh adaptivity: " << meshad <<  endl;
+   55 : if(meshad){
+   56 :   cout << "Mesh tolerance: " << tolmesh <<  endl;
+   57 :   cout << "tau: " << tau <<  endl;
+   58 : }
+   59 : 
+   60 : cout << "-----" << endl;
+   61 : 
+   62 : cout << "Sigmund filtering: " << sig <<  endl;
+   63 : cout << "beta: " << beta << endl;
+   64 : cout << "eta fixed: " << eta << endl;
+   65 : 
+   66 : cout << "-----" << endl;
+   67 : 
+   68 : cout << "Main cycle max iterations: " << maxit << endl;
+   69 : 
+   70 : cout << endl << endl;
+   71 : 
+   72 : cout << "*********************************************" << endl;
+   73 : cout << "case1_nonlinear.edp - Solution" << endl;
+   74 : cout << "*********************************************" << endl;
+   75 : ;
+   11 : include "helmholtz.edp"// ***************************************************************************
+    2 : // Helmholtz filter
+    3 : // ***************************************************************************
+    4 : problem helmholtz(vHelm, psi) = int2d(Th)(radius * (dx(vHelm) * dx(psi) + dy(vHelm) * dy(psi)))
+    5 :                               + int2d(Th)(vHelm * psi)
+    6 :                               - int2d(Th)(v * psi);
+    7 : 
+   12 : include "J.edp"// ***************************************************************************
+    2 : // Functional J = 1/2 * (delta Target)^2
+    3 : // ***************************************************************************
+    4 : func real J(real[int] & v)
+    5 : {
+    6 :   Xhp w; //density
+    7 :   w[] = v;
+    8 :   plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
+    9 :   // Sigmund filtering
+   10 :   if(sigIN){
+   11 :     plot(w, fill = 1, value = 1, cmm = "j = "+jj+" ii = "+ii);
+   12 :     eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+   13 :   	//beta = 2. * beta;
+   14 :     // beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
+   15 : 		wSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
+   16 :                    / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+   17 :     plot(w, fill = 1, value = 1, cmm = " Density post-Sigmund j = "+jj+" ii = "+ii);
+   18 : 		w = wSig;
+   19 :   }
+   20 : 
+   21 :   cout << "*********************************************" << endl;
+   22 :   cout << "PRIMAL PROBLEM ..." << endl;
+   23 :   // Newton step for primal problem
+   24 :   problem primallinearized([varu1,varu2], [psi1, psi2]) =
+   25 :     int2d(Th) (w^q * L * (2.0*detF(u10,u20)        
+   24 :  (F11(u10,u20)     (1.0 + grad11(u10,u20)   (dx(u10)) )  * F22(u10,u20)     (1.0 + grad22(u10,u20)   (dy(u20)) )  - F12(u10,u20)     (0.0 + grad12(u10,u20)   (dy(u10)) )  * F21(u10,u20)     (0.0 + grad21(u10,u20)   (dx(u20)) )  )
+   24 : -1.) * (dx(psi1)*F22(u10,u20)     (1.0 + grad22(u10,u20)   (dy(u20)) )  + dy(psi2)*F11(u10,u20)     (1.0 + grad11(u10,u20)   (dx(u10)) )  - dy(psi1)*F21(u10,u20)     (0.0 + grad21(u10,u20)   (dx(u20)) )  - dx(psi2)*F12(u10,u20)     (0.0 + grad12(u10,u20)   (dy(u10)) ) )
+   26 :                                           * (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) ))  * gradE11(u10,u20,varu1,varu2)       (grad11(u10,u20)   (dx(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(u10,u20)   (dx(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad11(varu1,varu2)   (dx(varu1)) )  + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * gradE12(u10,u20,varu1,varu2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )
+   27 :                                           +  invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * gradE21(u10,u20,varu1,varu2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )   + invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  * gradE22(u10,u20,varu1,varu2)       (grad12(u10,u20)   (dy(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(u10,u20)   (dy(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad22(varu1,varu2)   (dy(varu2)) ) )
+   28 : 
+   29 :              + w^q * L * (detF(u10,u20)        
+   24 :  (F11(u10,u20)     (1.0 + grad11(u10,u20)   (dx(u10)) )  * F22(u10,u20)     (1.0 + grad22(u10,u20)   (dy(u20)) )  - F12(u10,u20)     (0.0 + grad12(u10,u20)   (dy(u10)) )  * F21(u10,u20)     (0.0 + grad21(u10,u20)   (dx(u20)) )  )
+   24 : -1) * detF(u10,u20)        
+   24 :  (F11(u10,u20)     (1.0 + grad11(u10,u20)   (dx(u10)) )  * F22(u10,u20)     (1.0 + grad22(u10,u20)   (dy(u20)) )  - F12(u10,u20)     (0.0 + grad12(u10,u20)   (dy(u10)) )  * F21(u10,u20)     (0.0 + grad21(u10,u20)   (dx(u20)) )  )
+   24 :  * ( - D1111(u10,u20)      (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) ))  * 2 )  * gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) )  * gradE11(u10,u20,varu1,varu2)       (grad11(u10,u20)   (dx(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(u10,u20)   (dx(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad11(varu1,varu2)   (dx(varu1)) ) 
+   30 :                                                          - D1112(u10,u20)      (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) ) * gradE11(u10,u20,varu1,varu2)       (grad11(u10,u20)   (dx(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(u10,u20)   (dx(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad11(varu1,varu2)   (dx(varu1)) ) 
+   31 :                                                          - D1121(u10,u20)      (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )   * gradE11(u10,u20,varu1,varu2)       (grad11(u10,u20)   (dx(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(u10,u20)   (dx(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad11(varu1,varu2)   (dx(varu1)) ) 
+   32 :                                                          - D1122(u10,u20)      (invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) *invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) )  * gradE11(u10,u20,varu1,varu2)       (grad11(u10,u20)   (dx(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(u10,u20)   (dx(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad11(varu1,varu2)   (dx(varu1)) )  + invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) ))  * grad2E11(psi1,psi2,varu1,varu2)     (grad11(psi1,psi2)   (dx(psi1)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(psi1,psi2)   (dx(psi2)) *grad21(varu1,varu2)   (dx(varu2)) ) 
+   33 :                                                          - D1211(u10,u20)      (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) )  * gradE12(u10,u20,varu1,varu2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )
+   34 :                                                          - D1212(u10,u20)     (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) )  * gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) ) * gradE12(u10,u20,varu1,varu2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )
+   35 :                                                          - D1221(u10,u20)     (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) )  * gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )   * gradE12(u10,u20,varu1,varu2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )
+   36 :                                                          - D1222(u10,u20)      (invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) )) *invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) )  * gradE12(u10,u20,varu1,varu2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) ) + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * grad2E12(psi1,psi2,varu1,varu2)         (0.5*(grad11(psi1,psi2)   (dx(psi1)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(psi1,psi2)   (dx(psi2)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(psi1,psi2)   (dy(psi1)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(psi1,psi2)   (dy(psi2)) *grad21(varu1,varu2)   (dx(varu2)) )) 
+   37 :                                                          - D2111(u10,u20)      (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) )  * gradE21(u10,u20,varu1,varu2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )  
+   38 :                                                          - D2112(u10,u20)     (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) )  * gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) ) * gradE21(u10,u20,varu1,varu2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )  
+   39 :                                                          - D2121(u10,u20)     (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) )) *invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) )  * gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )   * gradE21(u10,u20,varu1,varu2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )  
+   40 :                                                          - D2122(u10,u20)      (invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) )) *invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) )  * gradE21(u10,u20,varu1,varu2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )   + invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * grad2E21(psi1,psi2,varu1,varu2)         (0.5*(grad11(psi1,psi2)   (dx(psi1)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(psi1,psi2)   (dx(psi2)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(psi1,psi2)   (dy(psi1)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(psi1,psi2)   (dy(psi2)) *grad21(varu1,varu2)   (dx(varu2)) )) 
+   41 :                                                          - D2211(u10,u20)      (invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) )  * gradE22(u10,u20,varu1,varu2)       (grad12(u10,u20)   (dy(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(u10,u20)   (dy(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad22(varu1,varu2)   (dy(varu2)) ) 
+   42 :                                                          - D2212(u10,u20)      (invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) ) * gradE22(u10,u20,varu1,varu2)       (grad12(u10,u20)   (dy(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(u10,u20)   (dy(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad22(varu1,varu2)   (dy(varu2)) ) 
+   43 :                                                          - D2221(u10,u20)      (invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) )) *invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * 2 )  * gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )   * gradE22(u10,u20,varu1,varu2)       (grad12(u10,u20)   (dy(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(u10,u20)   (dy(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad22(varu1,varu2)   (dy(varu2)) ) 
+   44 :                                                          - D2222(u10,u20)      (invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) )) *invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  * 2 )  * gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) )  * gradE22(u10,u20,varu1,varu2)       (grad12(u10,u20)   (dy(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(u10,u20)   (dy(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad22(varu1,varu2)   (dy(varu2)) )  + invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  * grad2E22(psi1,psi2,varu1,varu2)     (grad12(psi1,psi2)   (dy(psi1)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(psi1,psi2)   (dy(psi2)) *grad22(varu1,varu2)   (dy(varu2)) ) 
+   45 :                                                      )
+   46 : 
+   47 :               + w^q * 2.0*M* (gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) )  * gradE11(u10,u20,varu1,varu2)       (grad11(u10,u20)   (dx(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(u10,u20)   (dx(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad11(varu1,varu2)   (dx(varu1)) )  + E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  * grad2E11(psi1,psi2,varu1,varu2)     (grad11(psi1,psi2)   (dx(psi1)) *grad11(varu1,varu2)   (dx(varu1))  + grad21(psi1,psi2)   (dx(psi2)) *grad21(varu1,varu2)   (dx(varu2)) )  +
+   48 :   			                      gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) ) * gradE12(u10,u20,varu1,varu2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) ) + E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) )  * grad2E12(psi1,psi2,varu1,varu2)         (0.5*(grad11(psi1,psi2)   (dx(psi1)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(psi1,psi2)   (dx(psi2)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(psi1,psi2)   (dy(psi1)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(psi1,psi2)   (dy(psi2)) *grad21(varu1,varu2)   (dx(varu2)) ))  +
+   49 :   			                      gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )   * gradE21(u10,u20,varu1,varu2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(u10,u20)   (dx(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(u10,u20)   (dy(u10)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(u10,u20)   (dy(u20)) *grad21(varu1,varu2)   (dx(varu2))  + grad12(varu1,varu2)   (dy(varu1))  + grad21(varu1,varu2)   (dx(varu2)) ) )   + E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) )  * grad2E21(psi1,psi2,varu1,varu2)         (0.5*(grad11(psi1,psi2)   (dx(psi1)) *grad12(varu1,varu2)   (dy(varu1))  + grad21(psi1,psi2)   (dx(psi2)) *grad22(varu1,varu2)   (dy(varu2))  + grad12(psi1,psi2)   (dy(psi1)) *grad11(varu1,varu2)   (dx(varu1))  + grad22(psi1,psi2)   (dy(psi2)) *grad21(varu1,varu2)   (dx(varu2)) ))  +
+   50 :   			                      gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) )  * gradE22(u10,u20,varu1,varu2)       (grad12(u10,u20)   (dy(u10)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(u10,u20)   (dy(u20)) *grad22(varu1,varu2)   (dy(varu2))  + grad22(varu1,varu2)   (dy(varu2)) )  + E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  * grad2E22(psi1,psi2,varu1,varu2)     (grad12(psi1,psi2)   (dy(psi1)) *grad12(varu1,varu2)   (dy(varu1))  + grad22(psi1,psi2)   (dy(psi2)) *grad22(varu1,varu2)   (dy(varu2)) )  )
+   51 :              )
+   52 : 
+   53 :       + int2d(Th) (w^q * L*detF(u10,u20)        
+   24 :  (F11(u10,u20)     (1.0 + grad11(u10,u20)   (dx(u10)) )  * F22(u10,u20)     (1.0 + grad22(u10,u20)   (dy(u20)) )  - F12(u10,u20)     (0.0 + grad12(u10,u20)   (dy(u10)) )  * F21(u10,u20)     (0.0 + grad21(u10,u20)   (dx(u20)) )  )
+   24 : *(detF(u10,u20)        
+   24 :  (F11(u10,u20)     (1.0 + grad11(u10,u20)   (dx(u10)) )  * F22(u10,u20)     (1.0 + grad22(u10,u20)   (dy(u20)) )  - F12(u10,u20)     (0.0 + grad12(u10,u20)   (dy(u10)) )  * F21(u10,u20)     (0.0 + grad21(u10,u20)   (dx(u20)) )  )
+   24 : -1.) * (invC11(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0) ))  * gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) ) 
+   54 :   			                                                     + invC12(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )
+   55 :   			          																					 + invC21(u10,u20)      (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * ((-1)* C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) ))  * gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )  
+   56 :   			          																					 + invC22(u10,u20)     (1/detC(u10,u20)       
+   32 :  (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0)  * C22(u10,u20)     (2*E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  + 1.0)  - C12(u10,u20)   (2*E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) )  * C21(u10,u20)   (2*E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) ) ) )
+   32 :  * (C11(u10,u20)     (2*E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  + 1.0) ))  * gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) ) )
+   57 :        				    + w^q * 2.0 * M * (E11(u10,u20)       0.5*(grad11(u10,u20)   (dx(u10)) *grad11(u10,u20)   (dx(u10))  + 2.*grad11(u10,u20)   (dx(u10))  + grad21(u10,u20)   (dx(u20)) *grad21(u10,u20)   (dx(u20)) )  * gradE11(u10,u20,psi1,psi2)       (grad11(u10,u20)   (dx(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad21(u10,u20)   (dx(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad11(psi1,psi2)   (dx(psi1)) ) 
+   58 :   			                           + E12(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) )  * gradE12(u10,u20,psi1,psi2)             (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )
+   59 :   			    				               + E21(u10,u20)         0.5*(grad11(u10,u20)   (dx(u10)) *grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) *grad22(u10,u20)   (dy(u20))  + grad12(u10,u20)   (dy(u10))  + grad21(u10,u20)   (dx(u20)) )  * gradE21(u10,u20,psi1,psi2)               (0.5*(grad11(u10,u20)   (dx(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad21(u10,u20)   (dx(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad12(u10,u20)   (dy(u10)) *grad11(psi1,psi2)   (dx(psi1))  + grad22(u10,u20)   (dy(u20)) *grad21(psi1,psi2)   (dx(psi2))  + grad12(psi1,psi2)   (dy(psi1))  + grad21(psi1,psi2)   (dx(psi2)) ) )  
+   60 :   			                           + E22(u10,u20)       0.5*(grad12(u10,u20)   (dy(u10)) *grad12(u10,u20)   (dy(u10))  + 2.*grad22(u10,u20)   (dy(u20))  + grad22(u10,u20)   (dy(u20)) *grad22(u10,u20)   (dy(u20)) )  * gradE22(u10,u20,psi1,psi2)       (grad12(u10,u20)   (dy(u10)) *grad12(psi1,psi2)   (dy(psi1))  + grad22(u10,u20)   (dy(u20)) *grad22(psi1,psi2)   (dy(psi2))  + grad22(psi1,psi2)   (dy(psi2)) ) ))
+   61 :       + on(2,varu1=0) // Dirichlet
+   62 :       + on(1,varu2=0) // symmetric BC
+   63 :       + on(4,varu1=0) // symmetric BC
+   64 :     ;
+   65 : 
+   66 :   // Residual for Newton method
+   67 :   func real errorL2()
+   68 :   {
+   69 :    err1[] = u1[];
+   70 :    err1[] -= u10[];
+   71 : 
+   72 :    real erru = int2d(Th)(err1^2 + err2^2);
+   73 :    real normu = int2d(Th)(u10^2 + u20^2);
+   74 :    // return error estimate (stopping criterion)
+   75 :    return sqrt(erru / (normu+1e-15));
+   76 :   }
+   77 : 
+   78 : 	// Newton initialization
+   79 : 	[u10, u20] = [d1*x, 0]; //u_k old che soddisfa BC Dirichlet -> in params
+   80 : 	[u1, u2] = [u10, u20]; // u_1
+   81 : 	real tol = 1.e-12;
+   82 : 	real res = 2. * tol;
+   83 : 	int loopcount = 0;
+   84 : 	int loopmax = 100;
+   85 : 	real alpha = 1.0;
+   86 : 
+   87 : 	// Iterations
+   88 : 	while (loopcount <= loopmax && res >= tol){
+   89 : 	    loopcount ++;
+   90 : 	    cout << "Newton iteration " << loopcount << endl;
+   91 : 	    // Solve
+   92 : 	    primallinearized;
+   93 : 	    // Update
+   94 : 	    u1[] += alpha * varu1[];// u_k+1 = u_k + delta_u
+   95 : 	    // update error for the stopping criterion
+   96 : 	    res = errorL2();
+   97 : 	    //Update old solution
+   98 : 	    u10[] = u1[];
+   99 : 	}
+  100 : 
+  101 : 	real d2 = int1d(Th,3)(u2);
+  102 : 	nu12 = - d2 / d1; // estimated nu
+  103 : 
+  104 :   cout << "POISSON'S RATIO = " << nu12 << endl;
+  105 :   cout << "*********************************************" << endl;
+  106 : 
+  107 : 	return 0.5 * (nu12 - nutarget)^2;
+  108 : }
+  109 : ;
+   13 : include "gradJ.edp"// ***************************************************************************
+    2 : // Gradient of the functional (lagrangian approach)
+    3 : // ***************************************************************************
+    4 : 
+    5 : //Sigmund filter derivative
+    6 : //func real[int] dfilter(real[int] psi) {return dx(psi);}
+    7 : // (1/(tanh(beta * eta) + tanh(beta * (1-eta)) ) * beta / (cosh(beta*(psi-eta)))^2)
+    8 : 
+    9 : func real[int] gradJ(real[int] & v)
+   10 : {
+   11 :   Xhp w;
+   12 :   w[] = v;
+   13 : 
+   14 :   if(sigIN){
+   15 :     eta = (ii <= 2)*0.4 + (ii > 2 && ii <= 4)*0.5 + (ii > 4)*0.55;
+   16 :     //beta = 2 * beta;
+   17 :     // beta = betamax - (betamax - betamin) * exp(- jj / 2); //se vogliamo incrementare più "soft"
+   18 :     wSig = (1-xlb)*(tanh(beta * eta) + tanh(beta * (w - xlb - eta)))
+   19 :                  / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+   20 :   	w = wSig;
+   21 :   }
+   22 : 
+   23 :   J(w[]);
+   24 :   real [int] dJ(Xhp.ndof);
+   25 : 	real Curly = (nu12 - nutarget) / d1 ;
+   26 :   cout << "*********************************************" << endl;
+   27 :   cout << "DUAL PROBLEM ..." << endl;
+   28 : 
+   29 : 	solve dual([l1,l2], [phi1, phi2]) =
+   30 : 	int2d(Th) (w^q* L * (2.0*detF(u1,u2)        
+   24 :  (F11(u1,u2)     (1.0 + grad11(u1,u2)   (dx(u1)) )  * F22(u1,u2)     (1.0 + grad22(u1,u2)   (dy(u2)) )  - F12(u1,u2)     (0.0 + grad12(u1,u2)   (dy(u1)) )  * F21(u1,u2)     (0.0 + grad21(u1,u2)   (dx(u2)) )  )
+   24 : -1.) * (dx(phi1)*F22(u1,u2)     (1.0 + grad22(u1,u2)   (dy(u2)) )  + dy(phi2)*F11(u1,u2)     (1.0 + grad11(u1,u2)   (dx(u1)) )  - dy(phi1)*F21(u1,u2)     (0.0 + grad21(u1,u2)   (dx(u2)) )  - dx(phi2)*F12(u1,u2)     (0.0 + grad12(u1,u2)   (dy(u1)) ) )
+   31 :                                           * (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) ))  * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) )  + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )
+   32 :                                           +  invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )   + invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) ) )
+   33 : 
+   34 :            + w^q* L * (detF(u1,u2)        
+   24 :  (F11(u1,u2)     (1.0 + grad11(u1,u2)   (dx(u1)) )  * F22(u1,u2)     (1.0 + grad22(u1,u2)   (dy(u2)) )  - F12(u1,u2)     (0.0 + grad12(u1,u2)   (dy(u1)) )  * F21(u1,u2)     (0.0 + grad21(u1,u2)   (dx(u2)) )  )
+   24 : -1) * detF(u1,u2)        
+   24 :  (F11(u1,u2)     (1.0 + grad11(u1,u2)   (dx(u1)) )  * F22(u1,u2)     (1.0 + grad22(u1,u2)   (dy(u2)) )  - F12(u1,u2)     (0.0 + grad12(u1,u2)   (dy(u1)) )  * F21(u1,u2)     (0.0 + grad21(u1,u2)   (dx(u2)) )  )
+   24 :  * (  - D1111(u1,u2)      (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) ))  * 2 )  * gradE11(u1,u2,phi1,phi2)       (grad11(u1,u2)   (dx(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad21(u1,u2)   (dx(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad11(phi1,phi2)   (dx(phi1)) )  * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) ) 
+   35 : 			                                                   - D1112(u1,u2)      (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE12(u1,u2,phi1,phi2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) ) * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) ) 
+   36 : 			                                                   - D1121(u1,u2)      (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE21(u1,u2,phi1,phi2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) )   * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) ) 
+   37 : 			                                                   - D1122(u1,u2)      (invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) *invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE22(u1,u2,phi1,phi2)       (grad12(u1,u2)   (dy(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad22(u1,u2)   (dy(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad22(phi1,phi2)   (dy(phi2)) )  * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) )  + invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) ))  * grad2E11(phi1,phi2,l1,l2)     (grad11(phi1,phi2)   (dx(phi1)) *grad11(l1,l2)   (dx(l1))  + grad21(phi1,phi2)   (dx(phi2)) *grad21(l1,l2)   (dx(l2)) ) 
+   38 : 			                                                   - D1211(u1,u2)      (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE11(u1,u2,phi1,phi2)       (grad11(u1,u2)   (dx(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad21(u1,u2)   (dx(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad11(phi1,phi2)   (dx(phi1)) )  * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )
+   39 : 			                                                   - D1212(u1,u2)     (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) )  * gradE12(u1,u2,phi1,phi2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) ) * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )
+   40 : 			                                                   - D1221(u1,u2)     (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) )  * gradE21(u1,u2,phi1,phi2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) )   * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )
+   41 : 			                                                   - D1222(u1,u2)      (invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) )) *invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE22(u1,u2,phi1,phi2)       (grad12(u1,u2)   (dy(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad22(u1,u2)   (dy(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad22(phi1,phi2)   (dy(phi2)) )  * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) ) + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * grad2E12(phi1,phi2,l1,l2)         (0.5*(grad11(phi1,phi2)   (dx(phi1)) *grad12(l1,l2)   (dy(l1))  + grad21(phi1,phi2)   (dx(phi2)) *grad22(l1,l2)   (dy(l2))  + grad12(phi1,phi2)   (dy(phi1)) *grad11(l1,l2)   (dx(l1))  + grad22(phi1,phi2)   (dy(phi2)) *grad21(l1,l2)   (dx(l2)) )) 
+   42 : 			                                                   - D2111(u1,u2)      (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE11(u1,u2,phi1,phi2)       (grad11(u1,u2)   (dx(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad21(u1,u2)   (dx(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad11(phi1,phi2)   (dx(phi1)) )  * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )  
+   43 : 			                                                   - D2112(u1,u2)     (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) )  * gradE12(u1,u2,phi1,phi2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) ) * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )  
+   44 : 			                                                   - D2121(u1,u2)     (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) )) *invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) )  * gradE21(u1,u2,phi1,phi2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) )   * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )  
+   45 : 			                                                   - D2122(u1,u2)      (invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) )) *invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE22(u1,u2,phi1,phi2)       (grad12(u1,u2)   (dy(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad22(u1,u2)   (dy(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad22(phi1,phi2)   (dy(phi2)) )  * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )   + invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * grad2E21(phi1,phi2,l1,l2)         (0.5*(grad11(phi1,phi2)   (dx(phi1)) *grad12(l1,l2)   (dy(l1))  + grad21(phi1,phi2)   (dx(phi2)) *grad22(l1,l2)   (dy(l2))  + grad12(phi1,phi2)   (dy(phi1)) *grad11(l1,l2)   (dx(l1))  + grad22(phi1,phi2)   (dy(phi2)) *grad21(l1,l2)   (dx(l2)) )) 
+   46 : 			                                                   - D2211(u1,u2)      (invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE11(u1,u2,phi1,phi2)       (grad11(u1,u2)   (dx(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad21(u1,u2)   (dx(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad11(phi1,phi2)   (dx(phi1)) )  * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) ) 
+   47 : 			                                                   - D2212(u1,u2)      (invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE12(u1,u2,phi1,phi2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) ) * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) ) 
+   48 : 			                                                   - D2221(u1,u2)      (invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) )) *invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * 2 )  * gradE21(u1,u2,phi1,phi2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) )   * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) ) 
+   49 : 			                                                   - D2222(u1,u2)      (invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) )) *invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  * 2 )  * gradE22(u1,u2,phi1,phi2)       (grad12(u1,u2)   (dy(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad22(u1,u2)   (dy(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad22(phi1,phi2)   (dy(phi2)) )  * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) )  + invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  * grad2E22(phi1,phi2,l1,l2)     (grad12(phi1,phi2)   (dy(phi1)) *grad12(l1,l2)   (dy(l1))  + grad22(phi1,phi2)   (dy(phi2)) *grad22(l1,l2)   (dy(l2)) ) 
+   50 : 	                                                    )
+   51 : 
+   52 :             + w^q* 2.0*M* (gradE11(u1,u2,phi1,phi2)       (grad11(u1,u2)   (dx(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad21(u1,u2)   (dx(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad11(phi1,phi2)   (dx(phi1)) )  * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) )  + E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  * grad2E11(phi1,phi2,l1,l2)     (grad11(phi1,phi2)   (dx(phi1)) *grad11(l1,l2)   (dx(l1))  + grad21(phi1,phi2)   (dx(phi2)) *grad21(l1,l2)   (dx(l2)) )  +
+   53 :                       gradE12(u1,u2,phi1,phi2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) ) * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) ) + E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) )  * grad2E12(phi1,phi2,l1,l2)         (0.5*(grad11(phi1,phi2)   (dx(phi1)) *grad12(l1,l2)   (dy(l1))  + grad21(phi1,phi2)   (dx(phi2)) *grad22(l1,l2)   (dy(l2))  + grad12(phi1,phi2)   (dy(phi1)) *grad11(l1,l2)   (dx(l1))  + grad22(phi1,phi2)   (dy(phi2)) *grad21(l1,l2)   (dx(l2)) ))  +
+   54 :                       gradE21(u1,u2,phi1,phi2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad21(u1,u2)   (dx(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad12(u1,u2)   (dy(u1)) *grad11(phi1,phi2)   (dx(phi1))  + grad22(u1,u2)   (dy(u2)) *grad21(phi1,phi2)   (dx(phi2))  + grad12(phi1,phi2)   (dy(phi1))  + grad21(phi1,phi2)   (dx(phi2)) ) )   * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )   + E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) )  * grad2E21(phi1,phi2,l1,l2)         (0.5*(grad11(phi1,phi2)   (dx(phi1)) *grad12(l1,l2)   (dy(l1))  + grad21(phi1,phi2)   (dx(phi2)) *grad22(l1,l2)   (dy(l2))  + grad12(phi1,phi2)   (dy(phi1)) *grad11(l1,l2)   (dx(l1))  + grad22(phi1,phi2)   (dy(phi2)) *grad21(l1,l2)   (dx(l2)) ))  +
+   55 :                       gradE22(u1,u2,phi1,phi2)       (grad12(u1,u2)   (dy(u1)) *grad12(phi1,phi2)   (dy(phi1))  + grad22(u1,u2)   (dy(u2)) *grad22(phi1,phi2)   (dy(phi2))  + grad22(phi1,phi2)   (dy(phi2)) )  * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) )  + E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  * grad2E22(phi1,phi2,l1,l2)     (grad12(phi1,phi2)   (dy(phi1)) *grad12(l1,l2)   (dy(l1))  + grad22(phi1,phi2)   (dy(phi2)) *grad22(l1,l2)   (dy(l2)) )  )
+   56 :            )
+   57 : 					 -  int1d(Th,3)(Curly * phi2)
+   58 : 					 + on(2,l1=0) //dirichlet
+   59 : 			     + on(1,l2=0) // symmetric bc
+   60 : 			     + on(4,l1=0) // symmetric bc
+   61 : 			   ;
+   62 : 
+   63 :   real dfilter;
+   64 :   if(sigIN){
+   65 :     dfilter = (1-xlb)/(tanh(beta * eta) + tanh(beta * (1 - xlb -eta))) *
+   66 :                    beta / (cosh(beta*(w - xlb -eta)))^2;
+   67 :   }
+   68 :   else dfilter = 1.;
+   69 : 
+   70 :   varf gradient(SS, psi) =
+   71 :       int2d(Th) (q*w^(q-1) * dfilter * psi *
+   72 :                                      L*detF(u1,u2)        
+   24 :  (F11(u1,u2)     (1.0 + grad11(u1,u2)   (dx(u1)) )  * F22(u1,u2)     (1.0 + grad22(u1,u2)   (dy(u2)) )  - F12(u1,u2)     (0.0 + grad12(u1,u2)   (dy(u1)) )  * F21(u1,u2)     (0.0 + grad21(u1,u2)   (dx(u2)) )  )
+   24 : *(detF(u1,u2)        
+   24 :  (F11(u1,u2)     (1.0 + grad11(u1,u2)   (dx(u1)) )  * F22(u1,u2)     (1.0 + grad22(u1,u2)   (dy(u2)) )  - F12(u1,u2)     (0.0 + grad12(u1,u2)   (dy(u1)) )  * F21(u1,u2)     (0.0 + grad21(u1,u2)   (dx(u2)) )  )
+   24 : -1.) * (invC11(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0) ))  * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) ) 
+   73 :           			                                                     + invC12(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )
+   74 :           			          																					 + invC21(u1,u2)      (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * ((-1)* C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) ))  * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )  
+   75 :           			          																					 + invC22(u1,u2)     (1/detC(u1,u2)       
+   32 :  (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0)  * C22(u1,u2)     (2*E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  + 1.0)  - C12(u1,u2)   (2*E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) )  * C21(u1,u2)   (2*E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) ) ) )
+   32 :  * (C11(u1,u2)     (2*E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  + 1.0) ))  * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) ) )
+   76 : 
+   77 :        				 + q*w^(q-1)* dfilter * psi *
+   78 :                                 2.0 * M * (E11(u1,u2)       0.5*(grad11(u1,u2)   (dx(u1)) *grad11(u1,u2)   (dx(u1))  + 2.*grad11(u1,u2)   (dx(u1))  + grad21(u1,u2)   (dx(u2)) *grad21(u1,u2)   (dx(u2)) )  * gradE11(u1,u2,l1,l2)       (grad11(u1,u2)   (dx(u1)) *grad11(l1,l2)   (dx(l1))  + grad21(u1,u2)   (dx(u2)) *grad21(l1,l2)   (dx(l2))  + grad11(l1,l2)   (dx(l1)) ) 
+   79 :         			                           + E12(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) )  * gradE12(u1,u2,l1,l2)             (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )
+   80 :         			    				               + E21(u1,u2)         0.5*(grad11(u1,u2)   (dx(u1)) *grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) *grad22(u1,u2)   (dy(u2))  + grad12(u1,u2)   (dy(u1))  + grad21(u1,u2)   (dx(u2)) )  * gradE21(u1,u2,l1,l2)               (0.5*(grad11(u1,u2)   (dx(u1)) *grad12(l1,l2)   (dy(l1))  + grad21(u1,u2)   (dx(u2)) *grad22(l1,l2)   (dy(l2))  + grad12(u1,u2)   (dy(u1)) *grad11(l1,l2)   (dx(l1))  + grad22(u1,u2)   (dy(u2)) *grad21(l1,l2)   (dx(l2))  + grad12(l1,l2)   (dy(l1))  + grad21(l1,l2)   (dx(l2)) ) )  
+   81 :         			                           + E22(u1,u2)       0.5*(grad12(u1,u2)   (dy(u1)) *grad12(u1,u2)   (dy(u1))  + 2.*grad22(u1,u2)   (dy(u2))  + grad22(u1,u2)   (dy(u2)) *grad22(u1,u2)   (dy(u2)) )  * gradE22(u1,u2,l1,l2)       (grad12(u1,u2)   (dy(u1)) *grad12(l1,l2)   (dy(l1))  + grad22(u1,u2)   (dy(u2)) *grad22(l1,l2)   (dy(l2))  + grad22(l1,l2)   (dy(l2)) ) ))
+   82 :       ;
+   83 : 
+   84 :   dJ = gradient(0, Xhp);
+   85 :   cout << "jj = " << jj << endl;
+   86 :   cout << "DUAL PROBLEM: done!" << endl;
+   87 :   cout << "*********************************************" << endl;
+   88 :   jj += 1;
+   89 : 
+   90 :   return dJ;
+   91 : }
+   92 : ;
+   14 : include "constraints.edp"// ***************************************************************************
+    2 : // Constraints
+    3 : // ***************************************************************************
+    4 : // Volume fraction
+    5 : func real C(real[int] & v)
+    6 : {
+    7 :   Xhp w;
+    8 :   w[] = v;
+    9 : 
+   10 :   real fraction = int2d(Th)(w);
+   11 : 
+   12 :   return fraction;
+   13 : }
+   14 : 
+   15 : func real[int] ipC(real[int] & v)
+   16 : {
+   17 :   real[int] cc = [C(v)];
+   18 :   return cc;
+   19 : }
+   20 : 
+   21 : // Gradient
+   22 : func real[int] dC(real[int] & v)
+   23 : {
+   24 :   Xhp w;
+   25 :   w[] = v;
+   26 : 
+   27 :   varf dc(u,uu)   = int2d(Th)(uu);
+   28 : 
+   29 :   real [int] jacC = dc(0,Xhp);
+   30 :   return jacC;
+   31 : }
+   32 : 
+   33 : matrix mdC;
+   34 : 
+   35 : func matrix ipGradC(real[int] & v)
+   36 : {
+   37 :   real[int,int] dc(1,Xhp.ndof);
+   38 :   dc(0,:) = dC(v);
+   39 : 
+   40 :   mdC = dc;
+   41 :   return mdC;
+   42 : }
+   43 : ;
+   15 : 
+   16 : ofstream outnu ("output_nu.csv");
+   17 : // ***************************************************************************
+   18 : // Main
+   19 : // ***************************************************************************
+   20 : include "makemetrica.edp"//verbosity=0;
+    2 : 
+    3 : func real makemetrica(real toll)
+    4 : {
+    5 : 	include "sparse2full.edp"//verbosity=0;
+    2 : func real[int,int] sparse2full(matrix & M, int n)
+    3 : {
+    4 :   int [int] I(1),J(1);
+    5 :   real[int] C(1);
+    6 :   int nnz, icount, istop;
+    7 :   real [int,int] Mout(n,n);
+    8 : 
+    9 :   // converte una matrice sparsa n x n in una full
+   10 : 
+   11 :   // indici riga e colonna dei non-zero di M
+   12 :   [I,J,C] = M;
+   13 :   nnz = I.n;
+   14 : 
+   15 :   icount = 0;
+   16 :   Mout = 0;
+   17 :   for (int k = 0; k < n; k++)
+   18 :   {
+   19 :     istop = 0;
+   20 :     while (icount < nnz & istop == 0)
+   21 :     {
+   22 :       if (I(icount) == k)
+   23 :       {
+   24 :         Mout(k,J(icount)) = C(icount);
+   25 :         icount += 1;
+   26 :       }
+   27 :       else istop = 1;
+   28 :     }
+   29 :   }  
+   30 :   return Mout;  
+   31 : }
+   32 : ;
+    6 : 	include "makepatch.edp"//verbosity=0;
+    2 : 
+    3 : func real makepatch(int [int,int] & patch, int [int] & nextK)
+    4 : {
+    5 : 
+    6 :   real ne = Th.nt;
+    7 :   real nv = Th.nv;
+    8 :   
+    9 :   real [int,int] nod2ele(nv,1000); // stimo che ogni nodo veda al max 100 elementi
+   10 :   int [int] next(nv);             // puntatore alla prima posizione libera di nod2ele
+   11 :   next = 0;
+   12 :   
+   13 :   int [int] alreadyin(ne);
+   14 :   alreadyin = 0; 
+   15 :   int nod, ele;
+   16 : 
+   17 :   // costruzione di nod2ele
+   18 :   for (int k = 0; k < ne; k++)
+   19 :     for (int j = 0; j < 3; j++)
+   20 :        {
+   21 :          nod2ele(Th[k][j],next(Th[k][j])) = k; 
+   22 :          next(Th[k][j]) = next(Th[k][j]) + 1;
+   23 :        }
+   24 : 
+   25 :   
+   26 :   for (int k = 0; k < ne; k++)
+   27 :   {
+   28 :     patch(k,0) = k;
+   29 :     alreadyin(k) = 1;
+   30 :     for (int i = 0; i < 3; i++)
+   31 :     {
+   32 :       nod = Th[k][i];
+   33 :       for (int j = 0; j < next(nod); j++)
+   34 :       {
+   35 :         ele = nod2ele(nod,j);
+   36 :         if (alreadyin(ele) == 0) 
+   37 :         {
+   38 :           patch(k,nextK(k)) = ele;
+   39 :           alreadyin(ele) = 1;
+   40 :           nextK(k) = nextK(k) + 1;
+   41 :         }
+   42 :       } 
+   43 :     } 
+   44 :     alreadyin = 0;
+   45 :   }
+   46 : 	return 1;
+   47 : }
+   48 : 
+   49 : ;
+    7 : 	
+    8 : 	Xh0 vol=area; 
+    9 : 	Xh0 dxv,dyv;
+   10 : 	dxv=dx(v);
+   11 : 	dyv=dy(v);
+   12 : 	Xh0 estimatex,estimatey,estimateloc;
+   13 : 	
+   14 : 	int ne = Th.nt;
+   15 : 	int nv = Th.nv;
+   16 : 	
+   17 : 	real omega=1.0;
+   18 : 	real lam1star,lam2star;
+   19 : 	real px,py;
+   20 : 	real Ex,Ey;
+   21 : 	real vpatch;
+   22 : 	real traccia,determ,s1,s2,a1,a2,a,sK,emax,emin,lm,sKstar,prodlam;
+   23 : 	real eps=2.220446049250313e-16;
+   24 : 	real maxstretch = 1e3;
+   25 : 	
+   26 : 	int [int] nextK(ne);			//per ogni k, nextK(k) contiene il numero di elementi del patch di k;
+   27 : 	real[int] lam1K(ne),lam2K(ne); //autovalori delle MK
+   28 : 	real[int] Volpatchvertex(nv); //volume del patch dell' i-esimo nodo
+   29 : 
+   30 : 	int [int,int] patch(ne,100); //per ogni k(riga), le colonne sono i trinagoli del patch del tetraedro k
+   31 : 	real[int,int] GK(2,2),MK(2,2);
+   32 : 	real[int,int] Mfull(2,2),MMfull(2,2),Ufull(2,2),Vfull(2,2);  //versione full di M
+   33 : 	real [int,int] r1K(2,ne), r2K(2,ne);  // x autovettori delle MK
+   34 : 	real [int,int] r1Kstar(2,ne), r2Kstar(2,ne);
+   35 : 	real[int,int] Mstar(2,2); 
+   36 : 	real[int,int] metricaold(3,nv),metrica(3,nv);
+   37 : 	
+   38 : 	matrix M,MM,U,V;
+   39 : 
+   40 : 	nextK = 1;
+   41 : 	makepatch(patch,nextK);
+   42 : 	
+   43 : 	metrica=0;
+   44 : 	metricaold=0;
+   45 : 	Volpatchvertex=0;
+   46 : 	
+   47 : // Ricostruzione gradiente
+   48 : 
+   49 : 	for (int k = 0; k < ne; k++) //loop sui tetraedri
+   50 : 	{
+   51 : 	GK=0;
+   52 : 	MK=0;
+   53 : 	Mstar=0;
+   54 : 	px=0;
+   55 : 	py=0;
+   56 : 	vpatch=0;
+   57 : 	for(int j=0;j<nextK(k);j++){			//loop sul patch del k-esimo tetraedro
+   58 : 		px+=dxv[][patch(k,j)]*vol[][patch(k,j)];
+   59 : 		py+=dyv[][patch(k,j)]*vol[][patch(k,j)];
+   60 : 		vpatch+=vol[][patch(k,j)];   
+   61 : 		}//fine loop patch
+   62 : 	px=px/vpatch;
+   63 : 	py=py/vpatch;
+   64 : 	
+   65 : // Fine ricostruzione gradiente
+   66 : 
+   67 : // Stimatore errore (seminorma H1)
+   68 : 
+   69 : 	for (int j = 0; j < nextK(k); j++)	//loop sul patch del k-esimo tetraedro
+   70 : 	  {
+   71 : 	  Ex = px-dxv[][patch(k,j)];
+   72 : 	  Ey = py-dyv[][patch(k,j)];	  
+   73 : 	  GK(0,0) +=Ex*Ex*vol[][patch(k,j)];
+   74 :       GK(0,1) +=Ex*Ey*vol[][patch(k,j)]; 
+   75 : 	  GK(1,1) +=Ey*Ey*vol[][patch(k,j)]; 
+   76 : 	  }//fine loop patch
+   77 : 		
+   78 : 		//Gk è simmetrica
+   79 : 		GK(1,0) = GK(0,1);
+   80 : 		GK = vpatch^(-1)*GK; 
+   81 : 	
+   82 : 	estimatex[][k]=px-dxv[][k];
+   83 : 	estimatey[][k]=py-dyv[][k];
+   84 : 
+   85 : // Fine stimatore errore (seminorma H1)	
+   86 : 	
+   87 : 	
+   88 : 	
+   89 : 	M= [[(Th[k][1].x-Th[k][0].x)/sqrt(3.), (2*Th[k][2].x-Th[k][0].x-Th[k][1].x)/3],
+   90 :          [(Th[k][1].y-Th[k][0].y)/sqrt(3.), (2*Th[k][2].y-Th[k][0].y-Th[k][1].y)/3]
+   91 :         ];
+   92 : 	Mfull=sparse2full(M,3);
+   93 : 	
+   94 : 	MM = M*M';
+   95 :     // [U,S,V] = svd(M);
+   96 :     MMfull = sparse2full(MM,2);
+   97 :     traccia = MMfull(0,0) + MMfull(1,1);
+   98 :     determ  = MMfull(0,0)*MMfull(1,1) - MMfull(0,1)^2;
+   99 :     s1    = (traccia + sqrt(traccia^2 - 4*determ))/2;
+  100 :     s2    = determ/s1;
+  101 :     lam1K(k) = sqrt(s1);  
+  102 :     lam2K(k) = sqrt(s2);
+  103 : 	
+  104 : 	if (MMfull(0,1) == 0) U = [[1, 0],[0, 1]];
+  105 :     else
+  106 :     {
+  107 :       a1 = 1;
+  108 :       a2 = (s1 - MMfull(0,0))/MMfull(0,1);
+  109 :       a  = sqrt(1 + a2^2);
+  110 :       //cout << "lam1K = " << lam1K << endl;
+  111 :       //cout << "lam2K = " << lam2K << endl;
+  112 :       //cout << "a     = " << a    << endl;
+  113 :       U = [[a1/a, -a2/a], [a2/a, a1/a]];
+  114 :     }
+  115 :     Ufull    = sparse2full(U,2);
+  116 :     r1K(0,k) = Ufull(0,0);
+  117 :     r1K(1,k) = Ufull(1,0);
+  118 :     
+  119 : 	r2K(0,k) = Ufull(0,1);
+  120 :     r2K(1,k) = Ufull(1,1);
+  121 : 	
+  122 : 	
+  123 : 	MK =  1./lam1K(k)^2*r1K(0:2,k)*r1K(0:2,k)';  
+  124 : 	MK += 1./lam2K(k)^2*r2K(0:2,k)*r2K(0:2,k)';
+  125 : 	sK = lam1K(k)/lam2K(k);
+  126 : 
+  127 : 	// eig di GK: [V,E] = eig(GK);
+  128 :     traccia = GK(0,0) + GK(1,1);
+  129 :     determ  = GK(0,0)*GK(1,1) - GK(0,1)^2;
+  130 :     // ci cauteliamo contro valori nulli, troppo piccoli, o negativi degli autovalori
+  131 :     
+  132 : 	s1 = (traccia + sqrt(traccia^2 - 4*determ))/2;
+  133 :     s2 = (traccia - sqrt(traccia^2 - 4*determ))/2;
+  134 :     
+  135 : 	emax = max(s1,eps);
+  136 :     emin = max(s2,eps);
+  137 : 	
+  138 : 	if (GK(0,1) == 0) V = [[1, 0],[0, 1]];
+  139 :     else
+  140 :     {
+  141 :       a1 = 1;
+  142 :       a2 = (s2 - GK(0,0))/GK(0,1);
+  143 :       a  = sqrt(1 + a2^2);
+  144 :       V = [[a1/a, -a2/a], [a2/a, a1/a]];
+  145 :     }
+  146 :     Vfull = sparse2full(V,2);
+  147 :     r1Kstar(0,k) = Vfull(0,0);
+  148 :     r1Kstar(1,k) = Vfull(1,0);
+  149 :     r2Kstar(0,k) = Vfull(0,1);
+  150 :     r2Kstar(1,k) = Vfull(1,1);
+  151 : 	
+  152 : 	lm = 10*eps*emin;
+  153 :     emin = emin*(emin > lm) + lm*(emin <= lm);
+  154 :     emax = emax*(emin > lm) + lm*(emin <= lm);
+  155 :     sKstar = min(sqrt(emax/emin),maxstretch);
+  156 : 	//cout << sKstar << endl;
+  157 : 	maxsK = max(sKstar, maxsK);
+  158 : 	//cout << maxsK << endl;
+  159 :     
+  160 : 	// prodotto di lam1_star e lam2_star
+  161 :     prodlam = (toll/(sqrt(sKstar*emin+1/sKstar*emax)))^(2./3);
+  162 :     
+  163 : 	// il quoziente e' sK
+  164 :     // ci cauteliamo contro valori troppo piccoli o troppo grandi ??
+  165 :     lam1star = sqrt(prodlam*sKstar);
+  166 :     lam2star = sqrt(prodlam/sKstar);
+  167 : 	
+  168 : 	Mstar  = 1./lam1star^2*r1Kstar(0:1,k)*r1Kstar(0:1,k)';
+  169 :     Mstar += 1./lam2star^2*r2Kstar(0:1,k)*r2Kstar(0:1,k)';
+  170 : 
+  171 : 	////////////////////////////////
+  172 : 	//METRICA CORRENTE GLOBALE
+  173 : 	//////////////////////////////
+  174 : 	metricaold(0,Th[k][0]) += vol[][k]*MK(0,0);
+  175 :     metricaold(0,Th[k][1]) += vol[][k]*MK(0,0);
+  176 :     metricaold(0,Th[k][2]) += vol[][k]*MK(0,0);
+  177 : 	metricaold(1,Th[k][0]) += vol[][k]*MK(0,1);
+  178 :     metricaold(1,Th[k][1]) += vol[][k]*MK(0,1);
+  179 :     metricaold(1,Th[k][2]) += vol[][k]*MK(0,1);
+  180 :     metricaold(2,Th[k][0]) += vol[][k]*MK(1,1);
+  181 :     metricaold(2,Th[k][1]) += vol[][k]*MK(1,1);
+  182 :     metricaold(2,Th[k][2]) += vol[][k]*MK(1,1);
+  183 : 	
+  184 : 	
+  185 : 	metrica(0,Th[k][0]) += vol[][k]*Mstar(0,0);
+  186 :     metrica(0,Th[k][1]) += vol[][k]*Mstar(0,0);
+  187 :     metrica(0,Th[k][2]) += vol[][k]*Mstar(0,0);
+  188 :     metrica(1,Th[k][0]) += vol[][k]*Mstar(0,1);
+  189 :     metrica(1,Th[k][1]) += vol[][k]*Mstar(0,1);
+  190 :     metrica(1,Th[k][2]) += vol[][k]*Mstar(0,1);
+  191 :     metrica(2,Th[k][0]) += vol[][k]*Mstar(1,1);
+  192 : 	metrica(2,Th[k][1]) += vol[][k]*Mstar(1,1);
+  193 :     metrica(2,Th[k][2]) += vol[][k]*Mstar(1,1);
+  194 : 
+  195 : 	Volpatchvertex(Th[k][0]) += vol[][k];
+  196 :     Volpatchvertex(Th[k][1]) += vol[][k];
+  197 :     Volpatchvertex(Th[k][2]) += vol[][k];
+  198 : 	}//FINE LOOP SUI K
+  199 : 	cout<<endl<<"STIMATOREx== "<<estimatex[].max<<endl;
+  200 : 	cout<<endl<<"STIMATOREy== "<<estimatey[].max<<endl;
+  201 : 
+  202 : 	
+  203 : 	for (int i = 0; i < nv; i++) //LOOP SUI VERTICI
+  204 : 	{
+  205 : 	metricaold(0,i) = metricaold(0,i)/Volpatchvertex(i);
+  206 :     metricaold(1,i) = metricaold(1,i)/Volpatchvertex(i);
+  207 :     metricaold(2,i) = metricaold(2,i)/Volpatchvertex(i);
+  208 : 
+  209 :     metrica   (0,i) = metrica(0,i)/Volpatchvertex(i);
+  210 :     metrica   (1,i) = metrica(1,i)/Volpatchvertex(i);
+  211 :     metrica   (2,i) = metrica(2,i)/Volpatchvertex(i);
+  212 : 	
+  213 : 	m11[][i] = (omega*metrica(0,i) + (1-omega)*metricaold(0,i))/3;
+  214 :     m12[][i] = (omega*metrica(1,i) + (1-omega)*metricaold(1,i))/3;
+  215 :     m22[][i] = (omega*metrica(2,i) + (1-omega)*metricaold(2,i))/3;
+  216 : 	
+  217 : 	}//FINE LOOP SUI VERTICI
+  218 : 	
+  219 : 	metricaold = 3.^-1*metricaold;
+  220 : 	metrica    = 3.^-1*omega*metrica + (1-omega)*metricaold;
+  221 : 
+  222 : 
+  223 : 
+  224 : 
+  225 : }
+  226 : 
+  227 : 	
+  228 : 	
+  229 : 	
+  230 : 	
+  231 : 	
+  232 : 	
+  233 : 	
+  234 : 	
+  235 : 	
+  236 : 	
+  237 : 	
+  238 : 	
+  239 : 
+  240 : 
+  241 : ;
+   21 : 
+   22 : savemesh (Th, "results/mesh_initial.msh" );
+   23 : while(stopmesh > tolmesh && ii < maxit){
+   24 : 
+   25 : 	jj = 0;
+   26 : 
+   27 : 	// Power penalty law
+   28 : 	if(pen) q = qmax - 2 * exp(- ii / 2.); //q = 3/maxit * ii + 1;
+   29 : 	else q = qmax;
+   30 : 
+   31 : 
+   32 : 	IPOPT(J, gradJ, ipC, ipGradC, v[],
+   33 : 	  lb  = xlb[], ub  = xub[],
+   34 :    	  clb = clb  , cub = cub  ,
+   35 : 	  checkindex = 1, structjacc = [gvi,gvj],
+   36 :       maxiter = IPOPTmaxiter + 100 * (ii == 0), warmstart = ii,
+   37 : 	  lm = lm, uz = uz[], lz = lz[], tol=  IPOPTtol
+   38 : 	  //printlevel = 1,
+   39 : 	  //derivativetest="first-order");
+   40 :       //,maxiter=10);
+   41 : 	  );
+   42 : 
+   43 : 		// Helmholtz filtering
+   44 : 		if(helm && ii != maxit - 1){
+   45 : 			helmholtz;
+   46 : 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHelm.ps", cmm = "Density preHelm"+ii);
+   47 : 			plot(vHelm, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postHelm.ps", cmm = "Density postHelm"+ii);
+   48 : 			v = vHelm;
+   49 : 		}
+   50 : 
+   51 : 	// Mesh adaptivity
+   52 :   if(meshad){
+   53 :     maxsK = 1;
+   54 :     ntold = Th.nt;
+   55 :     makemetrica(tau);
+   56 :   	Th = adaptmesh(Th, metric = [m11[],m12[],m22[]], nbvx = 12000, periodic=[[2,y],[4,y],[1,x],[3,x]]);
+   57 : 		savemesh (Th, "results/meshii"+ii+".msh" );
+   58 :   	plot(Th, wait = 0, cmm="New mesh");
+   59 :   	cout << "maxsK = " << maxsK << endl;
+   60 :   }
+   61 : 
+   62 : 	// Heaviside filtering
+   63 : 	if(heav && ii != maxit - 1){
+   64 :     plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preHeav.ps", cmm = "Density preHeav"+ii);
+   65 : 		real betaH = 10*(ii < 19) + 7*(ii == 19);
+   66 : 		vHeav = 0.5 + tanh(betaH*(v-0.5))/(2*tanh(0.5*betaH));
+   67 :     plot(vHeav, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postHeav.ps", cmm = "Density postHeav"+ii);
+   68 :     v = vHeav;
+   69 : 	}
+   70 : 
+   71 : 	// Sigmund filtering
+   72 : 	if(sig && ii != maxit - 1){
+   73 : 			plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_preSig.ps", cmm = "Density preSig"+ii);
+   74 : 			vSig = (1-xlb) * (tanh(beta * eta) + tanh(beta * (v - xlb - eta)))
+   75 : 		                 / (tanh(beta * eta) + tanh(beta * (1 - xlb - eta))) + xlb;
+   76 : 			plot(vSig, wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density_postSig.ps", cmm = "Density postSig"+ii);
+   77 : 			v = vSig;
+   78 : 			beta += 1;
+   79 : 			eta += 0.02;
+   80 : 		}
+   81 : 	}
+   82 : 
+   83 :   // Mesh projection (only for mesh adaptivity)
+   84 :   if(meshad){
+   85 :   	v = v;
+   86 :   	xlb = xlb;
+   87 :   	xub = xub;
+   88 :   	gvi = gvi;
+   89 :   	gvj = 0:Xhp.ndof-1;
+   90 :   	lz = lz;
+   91 :   	uz = uz;
+   92 :   	m11 = m11;
+   93 :   	m12 = m12;
+   94 :   	m22 = m22;
+   95 : 
+   96 :   	stopmesh = abs(Th.nt - real(ntold))/ntold;
+   97 :   }
+   98 : 
+   99 : 	ii += 1;
+  100 : 
+  101 : 	cout << "Iteration " << ii << ", Mesh error = " << stopmesh << endl;
+  102 : 
+  103 : 	{
+  104 : 	ofstream fout("results/"+ii+"_density.txt");
+  105 : 	fout << v[];
+  106 : 	}
+  107 : 	plot(v,  wait = 0, fill = 1, value = 1, ps = "results/"+ii+"_density.ps", cmm = "Density "+ii);
+  108 : 	savevtk("results/"+ii+"_density.vtk", Th, v, dataname="Density", order=ffordervel);
+  109 : 
+  110 : 	outnu << nu12 << endl;
+  111 : }
+ Error line number 111, in file main.edp, before  token }
+syntax error
+  current line = 110
+Compile error : syntax error
+	line number :111, }
+error Compile error : syntax error
+	line number :111, }
+ code = 1 mpirank: 0

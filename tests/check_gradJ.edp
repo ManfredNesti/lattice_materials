@@ -8,7 +8,7 @@ ofstream out("check_gradJ.txt", append);
 int ii = 0;
 int jj = 0;
 
-include "../non_linear/macros.edp";
+include "../nonlinear/macros.edp";
 
 // ***************************************************************************
 // Parameters
@@ -62,8 +62,8 @@ func real J(real[int] & v) {
 
   out << "*********************************************" << endl;
   out << "PRIMAL PROBLEM ..." << endl;
-  include "../non_linear/cost_function/primal.edp";
-  include "../non_linear/cost_function/newton.edp";
+  include "../nonlinear/cost_function/primal.edp";
+  include "../nonlinear/cost_function/newton.edp";
 
   real d2 = int1d(Th,3)(u2);
 	nu12 = - d2 / d1; // estimated nu
@@ -86,7 +86,7 @@ func real[int] gradJ(real[int] & v) {
 	real Curly = (nu12 - nutarget) / d1 ;
   out << "*********************************************" << endl;
   out << "DUAL PROBLEM ..." << endl;
-  include "../non_linear/cost_function/dual.edp";
+  include "../nonlinear/cost_function/dual.edp";
   dual;
 
   varf gradient(SS, psi) =

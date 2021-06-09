@@ -1,8 +1,8 @@
 % grafici per validation phase
 addpath('/home/terri/Documenti/UNIVERSITA/NUM2/progetto/gitcode/lattice_materials/tests')
-addpath('/home/terri/Documenti/UNIVERSITA/NUM2/progetto/gitcode/lattice_materials/tests/tensile_non_linear_KS')
+addpath('/home/terri/Documenti/UNIVERSITA/NUM2/progetto/gitcode/lattice_materials/tests/tensile_nonlinear_KS')
 linear = readtable('tensile_linear.csv');
-nl_FF = readtable('tensile_non_linear_FF.csv');
+nl_FF = readtable('tensile_nonlinear_FF.csv');
 nl_KS = readtable('linear_consistency.csv');
 newton_conv = readtable('newton_convergence.csv');
 

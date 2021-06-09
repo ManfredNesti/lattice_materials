@@ -1,0 +1,2725 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ sizestack + 1024 =359880  ( 358856 )
+
+  -- Square mesh : nb vertices  =961 ,  nb triangles = 1800 ,  nb boundary edges 120
+
+
+*********************************************
+case1_nonlinear.edp - Params
+*********************************************
+Mesh size: 30 x 30
+nu: 0.5
+lambda: 0.666667
+mu: 0.333333
+Young modulus: 1
+-----
+Given horizontal traction on R: 1
+nu target: 0.5
+Power penalty law coefficient: 4
+Volume fraction: 0.3
+-----
+Initial density: hard-coded
+-----
+IPOPT max iterations: 15
+-----
+Helmholtz filtering: 0
+-----
+Heaviside filtering: 0
+-----
+Mesh adaptivity: 0
+-----
+Main cycle max iterations: 1
+
+
+*********************************************
+case1_nonlinear.edp - Solution
+*********************************************
+
+IPOPT Note : No hessian given ==> LBFGS hessian approximation enabled
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+This is Ipopt version 3.11.9, running with linear solver mumps.
+NOTE: Other linear solvers might be more efficient (see Ipopt documentation).
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:      961
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -3.4046  max 8.88888e+67
+jj = 0
+DUAL PROBLEM: done!
+*********************************************
+Total number of variables............................:      961
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:      961
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        1
+        inequality constraints with only upper bounds:        0
+
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -3.19923  max 2.60737e+06
+jj = 1
+DUAL PROBLEM: done!
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.53726  max 0.550472
+Newton iteration 2
+  -- Solve : 
+          min -0.191828  max 0.249921
+Newton iteration 3
+  -- Solve : 
+          min -0.0746476  max 0.117678
+Newton iteration 4
+  -- Solve : 
+          min -0.0394908  max 0.0365942
+Newton iteration 5
+  -- Solve : 
+          min -0.00873122  max 0.00667902
+Newton iteration 6
+  -- Solve : 
+          min -0.000289617  max 0.000170837
+POISSON'S RATIO = 0.0667557
+*********************************************
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  9.3850302e-02 1.05e-01 0.00e+00   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.537255  max 0.550473
+Newton iteration 2
+  -- Solve : 
+          min -0.191829  max 0.249923
+Newton iteration 3
+  -- Solve : 
+          min -0.0746528  max 0.11768
+Newton iteration 4
+  -- Solve : 
+          min -0.0394924  max 0.0365962
+Newton iteration 5
+  -- Solve : 
+          min -0.00873178  max 0.00667957
+Newton iteration 6
+  -- Solve : 
+          min -0.000289666  max 0.000170887
+POISSON'S RATIO = 0.0667532
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -2.78912  max 54691
+jj = 2
+DUAL PROBLEM: done!
+*********************************************
+   1  9.3851391e-02 1.05e-01 4.95e-02  -9.3 1.08e-01    -  7.26e-01 2.74e-02h  1
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.117857  max 0.538287
+Newton iteration 2
+  -- Solve : 
+          min -0.151554  max 0.243275
+Newton iteration 3
+  -- Solve : 
+          min -0.0473503  max 0.118683
+Newton iteration 4
+  -- Solve : 
+          min -0.0147887  max 0.0260741
+Newton iteration 5
+  -- Solve : 
+          min -0.00257201  max 0.00462002
+POISSON'S RATIO = 0.123265
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -124.258  max 1676.3
+jj = 3
+DUAL PROBLEM: done!
+*********************************************
+   2  7.0964812e-02 5.59e-02 6.77e+01  -2.4 5.01e-01    -  1.00e+00 4.53e-01f  1
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.400951  max 0.304102
+Newton iteration 2
+  -- Solve : 
+          min -0.142289  max 0.0700495
+Newton iteration 3
+  -- Solve : 
+          min -0.01463  max 0.00761598
+Newton iteration 4
+  -- Solve : 
+          min -0.000306697  max 0.000201302
+POISSON'S RATIO = 0.419076
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.11392  max 7.03189
+jj = 4
+DUAL PROBLEM: done!
+*********************************************
+   3  3.2743375e-03 2.66e-02 9.20e+01  -1.2 7.67e-01    -  9.53e-01 5.37e-01f  1
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.39122  max 0.28322
+Newton iteration 2
+  -- Solve : 
+          min -0.13519  max 0.0634091
+Newton iteration 3
+  -- Solve : 
+          min -0.0128856  max 0.0067593
+Newton iteration 4
+  -- Solve : 
+          min -0.00023758  max 0.000158013
+POISSON'S RATIO = 0.422589
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.135075  max 8.01216
+jj = 5
+DUAL PROBLEM: done!
+*********************************************
+   4  2.9962669e-03 0.00e+00 9.62e-02  -1.8 9.62e-02    -  1.00e+00 1.00e+00h  1
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.391136  max 0.282966
+Newton iteration 2
+  -- Solve : 
+          min -0.135042  max 0.0632565
+Newton iteration 3
+  -- Solve : 
+          min -0.0128602  max 0.00673509
+Newton iteration 4
+  -- Solve : 
+          min -0.000236049  max 0.000157108
+POISSON'S RATIO = 0.422332
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.130975  max 8.00773
+jj = 6
+DUAL PROBLEM: done!
+*********************************************
+   5  3.0161471e-03 0.00e+00 1.06e-03  -3.7 1.11e-03    -  9.95e-01 1.00e+00f  1
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.0597436  max 6.62999
+jj = 7
+DUAL PROBLEM: done!
+*********************************************
+   6  5.7947484e-03 0.00e+00 6.27e-04  -3.6 2.91e-01    -  8.42e-01 1.00e+00f  1
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.270457  max 0.330773
+Newton iteration 2
+  -- Solve : 
+          min -0.125523  max 0.0640351
+Newton iteration 3
+  -- Solve : 
+          min -0.0220304  max 0.0108417
+Newton iteration 4
+  -- Solve : 
+          min -0.00071417  max 0.000417895
+POISSON'S RATIO = 0.290324
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.318776  max 0.263724
+Newton iteration 2
+  -- Solve : 
+          min -0.129197  max 0.0467361
+Newton iteration 3
+  -- Solve : 
+          min -0.0153148  max 0.00710211
+Newton iteration 4
+  -- Solve : 
+          min -0.000253346  max 0.000216628
+POISSON'S RATIO = 0.347262
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.343007  max 0.229308
+Newton iteration 2
+  -- Solve : 
+          min -0.12457  max 0.0393991
+Newton iteration 3
+  -- Solve : 
+          min -0.0124378  max 0.00554355
+Newton iteration 4
+  -- Solve : 
+          min -0.000161293  max 0.000143819
+POISSON'S RATIO = 0.371389
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.354447  max 0.212106
+Newton iteration 2
+  -- Solve : 
+          min -0.121105  max 0.0362328
+Newton iteration 3
+  -- Solve : 
+          min -0.0110704  max 0.00485706
+Newton iteration 4
+  -- Solve : 
+          min -0.000126529  max 0.000117449
+POISSON'S RATIO = 0.382267
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.359919  max 0.203591
+Newton iteration 2
+  -- Solve : 
+          min -0.119284  max 0.0347263
+Newton iteration 3
+  -- Solve : 
+          min -0.010396  max 0.00453895
+Newton iteration 4
+  -- Solve : 
+          min -0.00011192  max 0.000106783
+POISSON'S RATIO = 0.387406
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.362584  max 0.199365
+Newton iteration 2
+  -- Solve : 
+          min -0.118281  max 0.0339928
+Newton iteration 3
+  -- Solve : 
+          min -0.0100631  max 0.0043945
+Newton iteration 4
+  -- Solve : 
+          min -0.000105169  max 0.000102367
+POISSON'S RATIO = 0.3899
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.363897  max 0.19726
+Newton iteration 2
+  -- Solve : 
+          min -0.117758  max 0.0336311
+Newton iteration 3
+  -- Solve : 
+          min -0.00990035  max 0.00432845
+Newton iteration 4
+  -- Solve : 
+          min -0.000101927  max 0.000100342
+POISSON'S RATIO = 0.391129
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364549  max 0.196247
+Newton iteration 2
+  -- Solve : 
+          min -0.117491  max 0.0334514
+Newton iteration 3
+  -- Solve : 
+          min -0.0098212  max 0.00429586
+Newton iteration 4
+  -- Solve : 
+          min -0.000100339  max 9.93449e-05
+POISSON'S RATIO = 0.391739
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364874  max 0.195743
+Newton iteration 2
+  -- Solve : 
+          min -0.117366  max 0.0333619
+Newton iteration 3
+  -- Solve : 
+          min -0.0097817  max 0.00427967
+Newton iteration 4
+  -- Solve : 
+          min -9.95529e-05  max 9.88505e-05
+POISSON'S RATIO = 0.392043
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365036  max 0.195491
+Newton iteration 2
+  -- Solve : 
+          min -0.117309  max 0.0333172
+Newton iteration 3
+  -- Solve : 
+          min -0.00976196  max 0.0042716
+Newton iteration 4
+  -- Solve : 
+          min -9.91619e-05  max 9.86043e-05
+POISSON'S RATIO = 0.392194
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365117  max 0.195365
+Newton iteration 2
+  -- Solve : 
+          min -0.11728  max 0.0332949
+Newton iteration 3
+  -- Solve : 
+          min -0.0097521  max 0.00426757
+Newton iteration 4
+  -- Solve : 
+          min -9.8967e-05  max 9.84814e-05
+POISSON'S RATIO = 0.39227
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365157  max 0.195302
+Newton iteration 2
+  -- Solve : 
+          min -0.117265  max 0.0332837
+Newton iteration 3
+  -- Solve : 
+          min -0.00974717  max 0.00426556
+Newton iteration 4
+  -- Solve : 
+          min -9.88696e-05  max 9.84201e-05
+POISSON'S RATIO = 0.392308
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365177  max 0.19527
+Newton iteration 2
+  -- Solve : 
+          min -0.117258  max 0.0332782
+Newton iteration 3
+  -- Solve : 
+          min -0.0097447  max 0.00426455
+Newton iteration 4
+  -- Solve : 
+          min -9.8821e-05  max 9.83894e-05
+POISSON'S RATIO = 0.392327
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365187  max 0.195255
+Newton iteration 2
+  -- Solve : 
+          min -0.117254  max 0.0332754
+Newton iteration 3
+  -- Solve : 
+          min -0.00974347  max 0.00426405
+Newton iteration 4
+  -- Solve : 
+          min -9.87966e-05  max 9.83741e-05
+POISSON'S RATIO = 0.392336
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365192  max 0.195247
+Newton iteration 2
+  -- Solve : 
+          min -0.117253  max 0.033274
+Newton iteration 3
+  -- Solve : 
+          min -0.00974286  max 0.0042638
+Newton iteration 4
+  -- Solve : 
+          min -9.87845e-05  max 9.83664e-05
+POISSON'S RATIO = 0.392341
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365195  max 0.195243
+Newton iteration 2
+  -- Solve : 
+          min -0.117252  max 0.0332733
+Newton iteration 3
+  -- Solve : 
+          min -0.00974255  max 0.00426367
+Newton iteration 4
+  -- Solve : 
+          min -9.87784e-05  max 9.83626e-05
+POISSON'S RATIO = 0.392343
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365196  max 0.195241
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332729
+Newton iteration 3
+  -- Solve : 
+          min -0.00974239  max 0.00426361
+Newton iteration 4
+  -- Solve : 
+          min -9.87754e-05  max 9.83607e-05
+POISSON'S RATIO = 0.392344
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.19524
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332728
+Newton iteration 3
+  -- Solve : 
+          min -0.00974232  max 0.00426358
+Newton iteration 4
+  -- Solve : 
+          min -9.87739e-05  max 9.83597e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332727
+Newton iteration 3
+  -- Solve : 
+          min -0.00974228  max 0.00426356
+Newton iteration 4
+  -- Solve : 
+          min -9.87731e-05  max 9.83592e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974226  max 0.00426356
+Newton iteration 4
+  -- Solve : 
+          min -9.87727e-05  max 9.8359e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974225  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87725e-05  max 9.83589e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.0597436  max 6.62999
+jj = 8
+DUAL PROBLEM: done!
+*********************************************
+   7  5.7947484e-03 0.00e+00 2.79e-04  -5.0 3.67e-01    -  6.30e-01 7.28e-12h 38
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.221714  max 0.383501
+Newton iteration 2
+  -- Solve : 
+          min -0.121661  max 0.107161
+Newton iteration 3
+  -- Solve : 
+          min -0.0275064  max 0.0172478
+Newton iteration 4
+  -- Solve : 
+          min -0.00167305  max 0.000732929
+Newton iteration 5
+  -- Solve : 
+          min -1.96828e-05  max 5.47365e-06
+POISSON'S RATIO = 0.20885
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.290564  max 0.297623
+Newton iteration 2
+  -- Solve : 
+          min -0.128745  max 0.0596427
+Newton iteration 3
+  -- Solve : 
+          min -0.019166  max 0.00970688
+Newton iteration 4
+  -- Solve : 
+          min -0.000509116  max 0.000334461
+POISSON'S RATIO = 0.312447
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.329603  max 0.247156
+Newton iteration 2
+  -- Solve : 
+          min -0.127533  max 0.045148
+Newton iteration 3
+  -- Solve : 
+          min -0.0141627  max 0.00657262
+Newton iteration 4
+  -- Solve : 
+          min -0.000214958  max 0.000179401
+POISSON'S RATIO = 0.356436
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.34819  max 0.220991
+Newton iteration 2
+  -- Solve : 
+          min -0.123155  max 0.0386961
+Newton iteration 3
+  -- Solve : 
+          min -0.0119137  max 0.00527913
+Newton iteration 4
+  -- Solve : 
+          min -0.000147262  max 0.000129622
+POISSON'S RATIO = 0.375451
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.356933  max 0.207994
+Newton iteration 2
+  -- Solve : 
+          min -0.120344  max 0.0358922
+Newton iteration 3
+  -- Solve : 
+          min -0.0108154  max 0.0047334
+Newton iteration 4
+  -- Solve : 
+          min -0.000120746  max 0.000111564
+POISSON'S RATIO = 0.384165
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.36113  max 0.201553
+Newton iteration 2
+  -- Solve : 
+          min -0.118862  max 0.0345631
+Newton iteration 3
+  -- Solve : 
+          min -0.0102712  max 0.00447946
+Newton iteration 4
+  -- Solve : 
+          min -0.000109276  max 0.000104444
+POISSON'S RATIO = 0.388322
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.363181  max 0.198351
+Newton iteration 2
+  -- Solve : 
+          min -0.118061  max 0.033913
+Newton iteration 3
+  -- Solve : 
+          min -0.0100014  max 0.00436965
+Newton iteration 4
+  -- Solve : 
+          min -0.000103906  max 0.000101268
+POISSON'S RATIO = 0.390351
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364193  max 0.196789
+Newton iteration 2
+  -- Solve : 
+          min -0.117645  max 0.0335916
+Newton iteration 3
+  -- Solve : 
+          min -0.00987068  max 0.00431618
+Newton iteration 4
+  -- Solve : 
+          min -0.00010131  max 9.98009e-05
+POISSON'S RATIO = 0.391352
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364696  max 0.196014
+Newton iteration 2
+  -- Solve : 
+          min -0.117434  max 0.0334318
+Newton iteration 3
+  -- Solve : 
+          min -0.00980641  max 0.00428976
+Newton iteration 4
+  -- Solve : 
+          min -0.000100034  max 9.90767e-05
+POISSON'S RATIO = 0.39185
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364947  max 0.195626
+Newton iteration 2
+  -- Solve : 
+          min -0.117341  max 0.0333521
+Newton iteration 3
+  -- Solve : 
+          min -0.00977431  max 0.00427663
+Newton iteration 4
+  -- Solve : 
+          min -9.94013e-05  max 9.87169e-05
+POISSON'S RATIO = 0.392098
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365072  max 0.195433
+Newton iteration 2
+  -- Solve : 
+          min -0.117296  max 0.0333123
+Newton iteration 3
+  -- Solve : 
+          min -0.00975827  max 0.00427008
+Newton iteration 4
+  -- Solve : 
+          min -9.90863e-05  max 9.85376e-05
+POISSON'S RATIO = 0.392222
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365135  max 0.195336
+Newton iteration 2
+  -- Solve : 
+          min -0.117273  max 0.0332925
+Newton iteration 3
+  -- Solve : 
+          min -0.00975025  max 0.00426681
+Newton iteration 4
+  -- Solve : 
+          min -9.89292e-05  max 9.84481e-05
+POISSON'S RATIO = 0.392284
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365166  max 0.195287
+Newton iteration 2
+  -- Solve : 
+          min -0.117262  max 0.0332825
+Newton iteration 3
+  -- Solve : 
+          min -0.00974625  max 0.00426518
+Newton iteration 4
+  -- Solve : 
+          min -9.88508e-05  max 9.84034e-05
+POISSON'S RATIO = 0.392315
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365182  max 0.195263
+Newton iteration 2
+  -- Solve : 
+          min -0.117256  max 0.0332776
+Newton iteration 3
+  -- Solve : 
+          min -0.00974424  max 0.00426436
+Newton iteration 4
+  -- Solve : 
+          min -9.88115e-05  max 9.83811e-05
+POISSON'S RATIO = 0.39233
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.36519  max 0.195251
+Newton iteration 2
+  -- Solve : 
+          min -0.117254  max 0.0332751
+Newton iteration 3
+  -- Solve : 
+          min -0.00974324  max 0.00426396
+Newton iteration 4
+  -- Solve : 
+          min -9.87919e-05  max 9.83699e-05
+POISSON'S RATIO = 0.392338
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365194  max 0.195245
+Newton iteration 2
+  -- Solve : 
+          min -0.117252  max 0.0332738
+Newton iteration 3
+  -- Solve : 
+          min -0.00974274  max 0.00426375
+Newton iteration 4
+  -- Solve : 
+          min -9.87821e-05  max 9.83643e-05
+POISSON'S RATIO = 0.392342
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365195  max 0.195242
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332732
+Newton iteration 3
+  -- Solve : 
+          min -0.00974249  max 0.00426365
+Newton iteration 4
+  -- Solve : 
+          min -9.87772e-05  max 9.83615e-05
+POISSON'S RATIO = 0.392344
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365196  max 0.19524
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332729
+Newton iteration 3
+  -- Solve : 
+          min -0.00974236  max 0.0042636
+Newton iteration 4
+  -- Solve : 
+          min -9.87748e-05  max 9.83601e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.19524
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332728
+Newton iteration 3
+  -- Solve : 
+          min -0.0097423  max 0.00426357
+Newton iteration 4
+  -- Solve : 
+          min -9.87736e-05  max 9.83595e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332727
+Newton iteration 3
+  -- Solve : 
+          min -0.00974227  max 0.00426356
+Newton iteration 4
+  -- Solve : 
+          min -9.87729e-05  max 9.83591e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974225  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87726e-05  max 9.83589e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974225  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87725e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.0597436  max 6.62999
+jj = 9
+DUAL PROBLEM: done!
+*********************************************
+   8  5.7947484e-03 0.00e+00 2.58e-04  -5.0 4.66e-01    -  6.95e-01 9.09e-13h 41
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.170433  max 0.415503
+Newton iteration 2
+  -- Solve : 
+          min -0.11611  max 0.161527
+Newton iteration 3
+  -- Solve : 
+          min -0.0248834  max 0.0359053
+Newton iteration 4
+  -- Solve : 
+          min -0.0028814  max 0.00214483
+Newton iteration 5
+  -- Solve : 
+          min -3.78244e-05  max 4.2435e-05
+POISSON'S RATIO = 0.133011
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.26471  max 0.322487
+Newton iteration 2
+  -- Solve : 
+          min -0.122102  max 0.0738981
+Newton iteration 3
+  -- Solve : 
+          min -0.0227483  max 0.0123823
+Newton iteration 4
+  -- Solve : 
+          min -0.000839919  max 0.000454577
+POISSON'S RATIO = 0.275535
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.317342  max 0.26144
+Newton iteration 2
+  -- Solve : 
+          min -0.128878  max 0.0508551
+Newton iteration 3
+  -- Solve : 
+          min -0.0156908  max 0.00747811
+Newton iteration 4
+  -- Solve : 
+          min -0.000276414  max 0.000210487
+POISSON'S RATIO = 0.341229
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.342794  max 0.228188
+Newton iteration 2
+  -- Solve : 
+          min -0.124723  max 0.0412953
+Newton iteration 3
+  -- Solve : 
+          min -0.0126683  max 0.00563598
+Newton iteration 4
+  -- Solve : 
+          min -0.000167139  max 0.000138228
+POISSON'S RATIO = 0.368803
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.354465  max 0.211556
+Newton iteration 2
+  -- Solve : 
+          min -0.12119  max 0.0369504
+Newton iteration 3
+  -- Solve : 
+          min -0.0111881  max 0.0048665
+Newton iteration 4
+  -- Solve : 
+          min -0.000128648  max 0.000114967
+POISSON'S RATIO = 0.381086
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.35996  max 0.203319
+Newton iteration 2
+  -- Solve : 
+          min -0.119355  max 0.0350501
+Newton iteration 3
+  -- Solve : 
+          min -0.0104559  max 0.00454154
+Newton iteration 4
+  -- Solve : 
+          min -0.000112834  max 0.000105991
+POISSON'S RATIO = 0.386844
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.362612  max 0.199241
+Newton iteration 2
+  -- Solve : 
+          min -0.118323  max 0.0341523
+Newton iteration 3
+  -- Solve : 
+          min -0.0100931  max 0.0043976
+Newton iteration 4
+  -- Solve : 
+          min -0.00010559  max 0.000101884
+POISSON'S RATIO = 0.389627
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.363913  max 0.197238
+Newton iteration 2
+  -- Solve : 
+          min -0.117781  max 0.0337102
+Newton iteration 3
+  -- Solve : 
+          min -0.00991439  max 0.00432986
+Newton iteration 4
+  -- Solve : 
+          min -0.000102129  max 0.000100101
+POISSON'S RATIO = 0.390994
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364557  max 0.196238
+Newton iteration 2
+  -- Solve : 
+          min -0.117503  max 0.0334908
+Newton iteration 3
+  -- Solve : 
+          min -0.00982822  max 0.00429653
+Newton iteration 4
+  -- Solve : 
+          min -0.000100438  max 9.9225e-05
+POISSON'S RATIO = 0.391672
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364878  max 0.195738
+Newton iteration 2
+  -- Solve : 
+          min -0.117369  max 0.0333816
+Newton iteration 3
+  -- Solve : 
+          min -0.00978521  max 0.00427999
+Newton iteration 4
+  -- Solve : 
+          min -9.96017e-05  max 9.87906e-05
+POISSON'S RATIO = 0.392009
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365038  max 0.195489
+Newton iteration 2
+  -- Solve : 
+          min -0.11731  max 0.033327
+Newton iteration 3
+  -- Solve : 
+          min -0.00976372  max 0.00427176
+Newton iteration 4
+  -- Solve : 
+          min -9.91862e-05  max 9.85744e-05
+POISSON'S RATIO = 0.392177
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365118  max 0.195364
+Newton iteration 2
+  -- Solve : 
+          min -0.11728  max 0.0332998
+Newton iteration 3
+  -- Solve : 
+          min -0.00975298  max 0.00426765
+Newton iteration 4
+  -- Solve : 
+          min -9.89791e-05  max 9.84665e-05
+POISSON'S RATIO = 0.392261
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365158  max 0.195301
+Newton iteration 2
+  -- Solve : 
+          min -0.117266  max 0.0332862
+Newton iteration 3
+  -- Solve : 
+          min -0.00974761  max 0.0042656
+Newton iteration 4
+  -- Solve : 
+          min -9.88757e-05  max 9.84126e-05
+POISSON'S RATIO = 0.392303
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365177  max 0.19527
+Newton iteration 2
+  -- Solve : 
+          min -0.117258  max 0.0332794
+Newton iteration 3
+  -- Solve : 
+          min -0.00974492  max 0.00426457
+Newton iteration 4
+  -- Solve : 
+          min -9.8824e-05  max 9.83857e-05
+POISSON'S RATIO = 0.392324
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365187  max 0.195255
+Newton iteration 2
+  -- Solve : 
+          min -0.117254  max 0.033276
+Newton iteration 3
+  -- Solve : 
+          min -0.00974358  max 0.00426406
+Newton iteration 4
+  -- Solve : 
+          min -9.87982e-05  max 9.83722e-05
+POISSON'S RATIO = 0.392335
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365192  max 0.195247
+Newton iteration 2
+  -- Solve : 
+          min -0.117253  max 0.0332743
+Newton iteration 3
+  -- Solve : 
+          min -0.00974291  max 0.0042638
+Newton iteration 4
+  -- Solve : 
+          min -9.87852e-05  max 9.83655e-05
+POISSON'S RATIO = 0.39234
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365195  max 0.195243
+Newton iteration 2
+  -- Solve : 
+          min -0.117252  max 0.0332734
+Newton iteration 3
+  -- Solve : 
+          min -0.00974257  max 0.00426368
+Newton iteration 4
+  -- Solve : 
+          min -9.87788e-05  max 9.83621e-05
+POISSON'S RATIO = 0.392343
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365196  max 0.195241
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.033273
+Newton iteration 3
+  -- Solve : 
+          min -0.00974241  max 0.00426361
+Newton iteration 4
+  -- Solve : 
+          min -9.87756e-05  max 9.83604e-05
+POISSON'S RATIO = 0.392344
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.19524
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332728
+Newton iteration 3
+  -- Solve : 
+          min -0.00974232  max 0.00426358
+Newton iteration 4
+  -- Solve : 
+          min -9.87739e-05  max 9.83596e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332727
+Newton iteration 3
+  -- Solve : 
+          min -0.00974228  max 0.00426356
+Newton iteration 4
+  -- Solve : 
+          min -9.87731e-05  max 9.83592e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974226  max 0.00426356
+Newton iteration 4
+  -- Solve : 
+          min -9.87727e-05  max 9.8359e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974225  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87725e-05  max 9.83589e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.0597436  max 6.62999
+jj = 10
+DUAL PROBLEM: done!
+*********************************************
+   9  5.7947484e-03 0.00e+00 3.56e-04  -5.0 5.38e-01    -  1.00e+00 1.14e-13h 44
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.364521  max 0.196324
+Newton iteration 2
+  -- Solve : 
+          min -0.117506  max 0.0333636
+Newton iteration 3
+  -- Solve : 
+          min -0.00980777  max 0.00428386
+Newton iteration 4
+  -- Solve : 
+          min -9.98612e-05  max 9.91419e-05
+POISSON'S RATIO = 0.391826
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.36486  max 0.195777
+Newton iteration 2
+  -- Solve : 
+          min -0.117375  max 0.0333181
+Newton iteration 3
+  -- Solve : 
+          min -0.00977495  max 0.0042737
+Newton iteration 4
+  -- Solve : 
+          min -9.93151e-05  max 9.87498e-05
+POISSON'S RATIO = 0.392086
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365029  max 0.195508
+Newton iteration 2
+  -- Solve : 
+          min -0.117313  max 0.0332953
+Newton iteration 3
+  -- Solve : 
+          min -0.00975858  max 0.00426862
+Newton iteration 4
+  -- Solve : 
+          min -9.90433e-05  max 9.85542e-05
+POISSON'S RATIO = 0.392216
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365113  max 0.195373
+Newton iteration 2
+  -- Solve : 
+          min -0.117282  max 0.033284
+Newton iteration 3
+  -- Solve : 
+          min -0.00975041  max 0.00426609
+Newton iteration 4
+  -- Solve : 
+          min -9.89077e-05  max 9.84564e-05
+POISSON'S RATIO = 0.392281
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365155  max 0.195306
+Newton iteration 2
+  -- Solve : 
+          min -0.117266  max 0.0332783
+Newton iteration 3
+  -- Solve : 
+          min -0.00974632  max 0.00426482
+Newton iteration 4
+  -- Solve : 
+          min -9.884e-05  max 9.84076e-05
+POISSON'S RATIO = 0.392313
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365176  max 0.195273
+Newton iteration 2
+  -- Solve : 
+          min -0.117259  max 0.0332754
+Newton iteration 3
+  -- Solve : 
+          min -0.00974428  max 0.00426418
+Newton iteration 4
+  -- Solve : 
+          min -9.88062e-05  max 9.83832e-05
+POISSON'S RATIO = 0.392329
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365187  max 0.195256
+Newton iteration 2
+  -- Solve : 
+          min -0.117255  max 0.033274
+Newton iteration 3
+  -- Solve : 
+          min -0.00974326  max 0.00426387
+Newton iteration 4
+  -- Solve : 
+          min -9.87892e-05  max 9.8371e-05
+POISSON'S RATIO = 0.392337
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365192  max 0.195247
+Newton iteration 2
+  -- Solve : 
+          min -0.117253  max 0.0332733
+Newton iteration 3
+  -- Solve : 
+          min -0.00974275  max 0.00426371
+Newton iteration 4
+  -- Solve : 
+          min -9.87808e-05  max 9.83649e-05
+POISSON'S RATIO = 0.392341
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365195  max 0.195243
+Newton iteration 2
+  -- Solve : 
+          min -0.117252  max 0.033273
+Newton iteration 3
+  -- Solve : 
+          min -0.00974249  max 0.00426363
+Newton iteration 4
+  -- Solve : 
+          min -9.87766e-05  max 9.83618e-05
+POISSON'S RATIO = 0.392343
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365196  max 0.195241
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332728
+Newton iteration 3
+  -- Solve : 
+          min -0.00974237  max 0.00426359
+Newton iteration 4
+  -- Solve : 
+          min -9.87744e-05  max 9.83603e-05
+POISSON'S RATIO = 0.392344
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.19524
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332727
+Newton iteration 3
+  -- Solve : 
+          min -0.0097423  max 0.00426357
+Newton iteration 4
+  -- Solve : 
+          min -9.87734e-05  max 9.83595e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974227  max 0.00426356
+Newton iteration 4
+  -- Solve : 
+          min -9.87729e-05  max 9.83591e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974225  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87726e-05  max 9.83589e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974225  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87725e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87724e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.365197  max 0.195239
+Newton iteration 2
+  -- Solve : 
+          min -0.117251  max 0.0332726
+Newton iteration 3
+  -- Solve : 
+          min -0.00974224  max 0.00426355
+Newton iteration 4
+  -- Solve : 
+          min -9.87723e-05  max 9.83588e-05
+POISSON'S RATIO = 0.392345
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -0.0597436  max 6.62999
+jj = 11
+DUAL PROBLEM: done!
+*********************************************
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  5.7947484e-03 0.00e+00 7.22e-04  -5.0 7.22e-04    -  1.00e+00 1.49e-08h 27
+
+Number of Iterations....: 10
+
+                                   (scaled)                 (unscaled)
+Objective...............:   5.7947483746221863e-03    5.7947483746221863e-03
+Dual infeasibility......:   7.2194277037160195e-04    7.2194277037160195e-04
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   9.4731458275019215e-06    9.4731458275019215e-06
+Overall NLP error.......:   7.2194277037160195e-04    7.2194277037160195e-04
+
+
+Number of objective function evaluations             = 157
+Number of objective gradient evaluations             = 11
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 158
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 11
+Number of Lagrangian Hessian evaluations             = 0
+Total CPU secs in IPOPT (w/o function evaluations)   =      0.858
+Total CPU secs in NLP function evaluations           =   1050.577
+
+EXIT: Optimal Solution Found.
+
+
+*** Ipopt succeeded 
+Iteration 1, Mesh error = 1.0001
+ 0x5578d833fa30 VTK_FILE 1
+1800
+times: compile 0.230612s, execution 1052.06s,  mpirank:0
+ CodeAlloc : nb ptr  22624,  size :1063640 mpirank: 0
+Ok: Normal End

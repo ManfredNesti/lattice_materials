@@ -2,10 +2,10 @@
 // Tensile non linear starting from FreeFem++ documentation
 // https://doc.freefem.org/models/non-linear-elasticity.html
 // ***************************************************************************
-exec("rm tensile_non_linear_FF.csv");
-exec("touch tensile_non_linear_FF.csv");
+exec("rm tensile_nonlinear_FF.csv");
+exec("touch tensile_nonlinear_FF.csv");
 
-ofstream out("tensile_non_linear_FF.csv", append);
+ofstream out("tensile_nonlinear_FF.csv", append);
 out << "u,nu,nl" << endl;
 
 real u = 0.05, v = -0.1;

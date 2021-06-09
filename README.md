@@ -1,48 +1,83 @@
-# Lattice materials - [Report NAPDE](https://www.overleaf.com/project/6033cb6252d38a235a8b57a5)
+# Topology optimization of lattice materials with nonlinear elasticity law
+Project repository for *Numerical Analysis for Partial Differential Equations*. A.Y. 2020-2021
 
-## Non linear 2D - [Flowchart](https://www.overleaf.com/project/60409aad8f184877680367ce)
+* Teresa Babini (teresa.babini@mail.polimi.it)
+* Manfred Nesti (manfred.nesti@mail.polimi.it)
 
-![Graph](https://g.gravizo.com/svg?digraph%20G%20%7B%0A%20%20subgraph%20cluster_case1_linear%20%7B%0A%20%20label%3D%22LINEAR%22%0A%20%20case1%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_case1_non_linear%20%7B%0A%20%20label%3D%22NON%20LINEAR%22%0A%20%20case1%20-%3E%20case1_non_linear%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_linear%20%7B%0A%20%20%20%20label%3D%22LINEAR%22%0A%20%20%20%20tensile%20-%3E%20tensile_BC%20-%3E%20tensile_BC_nu%3B%0A%20%20%20%20tensile%20-%3E%20tensile_nu%20-%3E%20tensile_BC_nu%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_non_linear%20%7B%0A%20%20%20%20label%3D%22NON%20LINEAR%22%0A%20%20%20%20tensile_nu%20-%3E%20tensile_non_linear%3B%0A%20%20%20%20ff_non_linear%20-%3E%20tensile_non_linear%20-%3E%20tensile_non_linear_e4%3B%0A%20%20%7D%0A%7D%0A)
+For the implementation we used `FreeFem++`, which is an open source programming language based on `C++`, focused on solving partial differential equations using the finite element method. To install `FreeFem++` and for the documentation you can refer to [`FreeFem++` documentation](https://doc.freefem.org/documentation/index.html).
 
-* __tensile.edp__: problema lineare di Micheletti, nu calcolato con convect
-* __tensile_BC.edp__: modello lineare di Michelletti, nu calcolato con convect, BC di Nicola
-* __tensile_nu.edp__: modello lineare di Micheletti, nu calcolato con formula 3 paper non lineare Sigmund
-* __tensile_BC_nu.edp__: modello lineare di Micheletti, BC di Nicola, nu calcolato con formula 3 paper non lineare Sigmund
-* __ff_non_linear.edp__: problema non lineare dalla documentazione di FreeFem
-* __tensile_non_linear.edp__: stesso problema di trazione di Micheletti nel modello non lineare di FreeFem, f(F2) = F2, parametro nl = {0: lineare, 1: non lineare}
-* __tensile_non_linear_e4.edp__: stesso problema di trazione di Micheletti col modello non lineare nostro con energia4, risolto tramite metodo di Newton
-* __case1.edp__: problema lineare
-* __case1_non_linear2.edp__: modifica problema case1 con modello non lineare ottenuto tramite paper Sigmund e KS (modello nostro), con energia4, primal risolto tramite metodo di Newton
+## Nonlinear method
 
-__Progressi__:
-* Abbiamo preso il problema linear di trazione di Micheletti (tensile.edp) e provato a mettere le BC di Nicola (__tensile_BC.edp__) e a calcolare nu con la formula di Sigmund anziché con convect (__tensile_nu.edp__) anche congiuntamente (__tensile_BC_nu.edp__)
-* Abbiamo abbandonato le BC di Nicola e mantenuto il nostro calcolo di nu con la formula di Sigmund anziché convect (__tensile_nu.edp__)
-* Il problema lineare di trazione di Micheletti con il nostro nu sembra funzionare sempre, nu viene 0.3 indipendentemente dallo spostamento imposto u0
-* Abbiamo studiato il codice del problema non lineare dalla documentazione di FreeFem (__ff_non_linear.edp__), correggendo il bug segnalato da Michelletti e impostando f funzione dell'energia F2 a f(F2) = F2, perché non ci interessa studiare una particolare funzione dell'energia
-* La correzione del bug insieme a f identità come sopra funziona, se invece correggiamo il bug ma lasciando f(F2) = 0.25 * F2^2 non funziona più (nè il pb della doc di Freefem nè il nostro)
-* Abbiamo provato a risolvere con il codice non lineare lo stesso problema di trazione di Micheletti (__tensile_non_linear.edp__)
-* Con il parametro nl = {0: lineare, 1: non lineare} davanti alla componente non lineare di epsilon abbiamo verificato che nu torna 0.3 anche con il codice non lineare, quindi è consistente con la soluzione di Micheletti, mentre nel problema non lineare viene nu = 0.68 che teniamo come riferimento per testare il problema primale non lineare ricavato da noi
-* Implementato Newton per risolvere il nostro problema primale in __tensile_non_linear_e4.edp__ e limitando i contributi non lineari torna nu = 0.3
-* Stiamo lavorando su __case1_non_linear.edp__, rimane da capire come far funzionare bene IPOPT
+In `nonlinear/` you can find the software we developed to solve the nonlinear unit cell optimization problem. This is the graph showing the dependencies bewteen files
 
-__nu__:
+DOT FILE
 
-```cpp
-int main() {
-  real d1 = int1d(Th,2)(rho*u1) - int1d(Th,4)(rho*u1);
-  real d2 = int1d(Th,3)(rho*u2) - int1d(Th,1)(rho*u2);;
-  real nu12 = -d2/d1;
-}
-```
+* `params.edp` & `print_params.edp`
 
-__BCs di Nicola__:
+This is the module you can use to set your parameters for the simulation.
 
-* __B__: Neumann omogeneo
-* __R__: trazione = Dirichlet u = [u0 , 0]  -> v = int1d(bordo di sopra) (u)/ lunghezza_bordo di sopra (per convertire valore nodale in un valore singolo sul bordo di sopra)
-* __T__: Neumann omogeneo
-* __L__: simmetria u.n = 0
+In the load section you can decide if to start a simulation from scratch of if or to load a previously computed density (and its mesh) to start from that point. If you use the first option, you need to give an initial density that you can hard-code or set randomly, otherwise you need to give the path and the index of the density you want to load.
 
-Noi stiamo lasciando lo spostamento verticale libero a DX
+In the params section you can specify the desired Poisson's ratio $nu$ and Young coefficient $E$ of the base material you want to use. Notice that the $\lambda$ (`L`) coefficient is computed using the $2$D formula since we are using $2$D materials. In this section you can also set the target Poisson's ratio `nutarget` you want to obtain.
 
-## Linear 3D - [Estensione 3D](https://www.overleaf.com/project/60409af88f18480fab036998)
-* __linear_3D.edp__
+In the spaces sections you find the spaces for the density (simple of periodic), for the displacements and for the constraints on the area.
+
+The `print_params.edp` module helps you taking track of your tuning trials, printing in the `output.txt` file all the parameters you have chosen.
+
+* `macros.edp`
+
+This module contains all the macro definitions we need in the simulation, like the gradient of a vector, the deformation gradient and the Green-Lagrange strain tensor, the second Piola-Kirchhoff stress tensor and so on. In the previous section you can find all their definitions and other more variables.
+
+* `constraints.edp`
+
+This module contains the functions which return the volume constraints in the format `IPOPT` is able to use. These functions are indeed directly passed in the `IPOPT` call in `main.edp`
+
+* `cost_function/ folder`
+
+This module contains the submodules related to the cost function $J$ and its gradient (see `J.edp` and `gradJ.edp`), which respectively contains the primal problem (to be solved iteratively using the Newton's method) and the dual problem (see `primal.edp`, `dual.edp` and `newton.edp`).
+
+* `adaptmesh/ folder`
+
+This folder contains some modules used to create the metric that `FreeFem++` fucntion `adaptmesh` reads to perform the grid adaptation.
+
+* `run.sh`
+
+To start a simulation you need to run this script with `./run.sh`. This script creates a new folder in `nonlinear/results` named with the current timestamp, it runs `main.edp` also saving all the output in `output.txt` which it moves in the current simulation folder, together with all the other `FreeFem++` outputs of the simulation, .
+
+* `main.edp`
+
+This is the main script which is called by `run.sh`. It includes all the necessary and start the iterative algorithm \ref{alg:final using the index `ii` for the optimization procedure. The index `jj` is used inside `IPOPT`, which solves many time the primal problem estimating $nu$ and a single time the dual for each `jj`. In the main cycle you can find the power penalty law, the filters and the mesh adaptivity that can be performed also only at some specific iterations (but not at the last one) activating the corresponding `if` condition. During all the optimization (and in particular before and after some filter usage) the density and the meshes are always plotted and saved, moreover, some useful information are printed both in the terminal and in the `output.txt` file.
+
+## Validation tests
+
+During the implementation phase we started from scratch by some simple cases and tests, in order to test step-by-step our work and validate the model. In `tests/` you can find the material related to this topic. This is the graph showing the dependencies between files.
+
+DOT FILE
+
+* `tensile_linear.edp`
+
+The first thing we did was to develop a simple tensile problem in which a rectangular full $2$D material (density equal to $1$ everywhere) is stretched on the right boundary, free-movement condition characterize top boundary and symmetric BCs are imposed on the other boundaries.
+
+Solved the problem, the Poisson's ratio is computed and we had to find a way to compute the transverse and axial strain valid in the formulation of our optimization problem for a nonlinear material. Therefore, once was done through the `convect` function of `FreeFem++`, more reliable with respect to the physical meaning of the quantity used in the formula but not suited for the derivation of the cost function $J$, and then with an average of the displacements on the boundaries of interest (as in eq. (\ref{our nu)). These two estimates, with the same imposed right displacement on the right boundary, are saved into `tensile_linear.csv` for variable values of the latter. We can see that, for each values of the imposed displacement, the Poisson's ratio remains the same and that it is the imposed one. Moreover, the Poisson's ratios estimated in the two way coincide.
+
+* `tensile_nonlinear_FF.edp`
+
+After that, we started taking into account the nonlinearity. We started from the example of nonlinear elasticity law provided by `FreeFem++` documentation [here](https://doc.freefem.org/models/nonlinear-elasticity.html) in which the nonlinearity comes in the $\varepsilon$ tensor, in which also the second order terms are considered.
+
+We adapt the code to solve the same tensile problem of the previous test, adding and making change from $1$ to $0$ the parameter `nl` representing the weight of the nonlinear part of $\epsilon$. In `tensile_nonlinear_FF.csv` you can see that we have $\nu = 0.68$ for `nl` equal to $1$ and that $\nu \to 0.3$ for `nl` tending to $0$: this confirms that the nonlinear model is consistent with the linear one since it gives the same result in linear regime on the same test problem. This results can be used as a possible comparison for our nonlinear model.
+
+* `tensile_nonlinear_KS.edp` & `check_newton_jac.edp`
+
+Since, in our model, the nonlinearity comes from a nonlinear elastic energy-based formulation, differently from `FreeFem++` model, in this test we take the primal problem we have formulated and implemented, testing if also this is consistent with the linear case. In `tensile_nonlinear_KS\` folder you can find the output of this test.
+
+
+  * In `linear_consistency.csv` you can see that if the enforced displacement tends to $0$, the estimated $\nu$ tends to $0.3$, since, reducing the enforced displacement we are limiting the nonlinear effects. So, our primal problem is also consistent with the linear case.
+
+  * In `newton_convergence.csv` you find the reducing increments used as a convergence criterion for the Newton's method.
+
+  * Finally, in `check_newton_jacobian.txt`, you can find the results of a validation test on the Newton jacobian computation, to verify if the derivation of it in sec. (\ref{primal) was done correctly.
+
+
+* check_gradJ.edp
+
+Finally, in this script was validated whether if the gradient of the cost functional $J$ and consequently the dual problem have been computed correctly.

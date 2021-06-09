@@ -1,0 +1,141 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ sizestack + 1024 =339840  ( 338816 )
+
+  -- Square mesh : nb vertices  =961 ,  nb triangles = 1800 ,  nb boundary edges 120
+
+
+*********************************************
+case1_nonlinear.edp - Params
+*********************************************
+Mesh size: 30 x 30
+nu: 0.3
+lambda: 0.32967
+mu: 0.384615
+Young modulus: 1
+-----
+Given horizontal traction on R: 0.01
+nu target: -0.6
+Volume fraction: 0.4
+-----
+Initial density: hard-coded
+-----
+IPOPT max iterations: 40
+-----
+Power law: 0
+q: 3
+qmax: 3
+-----
+Helmholtz filtering: 0
+-----
+Heaviside filtering: 0
+-----
+Mesh adaptivity: 0
+-----
+Sigmund filtering: 1
+beta: 3.5
+eta: 0.45
+-----
+Main cycle max iterations: 12
+
+
+*********************************************
+case1_nonlinear.edp - Solution
+*********************************************
+
+IPOPT Note : No hessian given ==> LBFGS hessian approximation enabled
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+This is Ipopt version 3.11.9, running with linear solver mumps.
+NOTE: Other linear solvers might be more efficient (see Ipopt documentation).
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:      961
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.473016  max 0.716252
+Newton iteration 2
+  -- Solve : 
+          min -0.475178  max 0.206448
+Newton iteration 3
+  -- Solve : 
+          min -0.567833  max 1.36419
+Newton iteration 4
+  -- Solve : 
+          min -2.8047  max 1.96631
+Newton iteration 5
+  -- Solve : 
+          min -1.67393  max 1.93228
+Newton iteration 6
+  -- Solve : 
+          min -10.4208  max 13.5925
+Newton iteration 7
+  -- Solve : 
+          min -4.64701  max 3.65768
+Newton iteration 8
+  -- Solve : 
+          min -3.6279  max 2.4982
+Newton iteration 9
+  -- Solve : 
+          min -4.02616  max 3.02618
+Newton iteration 10
+  -- Solve : 
+          min -108.811  max 69.1293
+Newton iteration 11
+  -- Solve : 
+          min -23.0704  max 36.146
+Newton iteration 12
+  -- Solve : 
+          min -15.3653  max 24.0885
+Newton iteration 13
+  -- Solve : 
+          min -10.3161  max 16.079
+Newton iteration 14
+  -- Solve : 
+          min -7.00592  max 10.8414
+Newton iteration 15
+  -- Solve : 
+          min -9.29223  max 16.0876
+Newton iteration 16
+  -- Solve : 
+          min -5.4067  max 10.3284
+Newton iteration 17
+  -- Solve : 
+          min -254.817  max 307.161
+Newton iteration 18
+  -- Solve : 
+          min -106.984  max 81.7671
+Newton iteration 19
+  -- Solve : 
+          min -64.6515  max 57.5081
+Newton iteration 20
+  -- Solve : 
+          min -68.4711  max 275.947
+Newton iteration 21
+  -- Solve : 
+          min -64.116  max 87.1932
+Newton iteration 22
+  -- Solve : 
+          min -38.5848  max 37.5972
+Newton iteration 23
+  -- Solve : 
+          min -43.0427  max 24.3671
+Newton iteration 24
+  -- Solve : 
+          min -24.4429  max 14.8582
+Newton iteration 25
+  -- Solve : 
+          min -157.54  max 72.8741
+Newton iteration 26
+  -- Solve : 
+          min -27.9224  max 51.1149

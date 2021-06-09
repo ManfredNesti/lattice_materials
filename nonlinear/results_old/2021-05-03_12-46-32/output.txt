@@ -1,0 +1,114 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+    1 : load "ff-Ipopt";
+    2 : load "ffrandom";
+    3 : load "iovtk" load: iovtk 
+;
+    4 : 
+    5 : int ii = 0;
+    6 : int jj = 0;
+    7 : 
+    8 : include "macros.edp"// ***************************************************************************
+    2 : // Macros
+    3 : // ***************************************************************************
+    4 : // Gradient of a vector field (u1, u2)
+    5 : macro grad11(u1, u2) (dx(u1))  )   (dx(u1)) //
+    6 : macro grad12(u1, u2) (dy(u1))  )   (dy(u1)) //
+    7 : macro grad21(u1, u2) (dx(u2))  )   (dx(u2)) //
+    8 : macro grad22(u1, u2) (dy(u2))  )   (dy(u2)) //
+    9 : // Deformation gradient F
+   10 : macro F11(u1,u2) (1.0 + grad11(u1,u2))  )   (1.0 + grad11(u1,u2)) //
+   11 : macro F12(u1,u2) (0.0 + grad12(u1,u2))  )   (0.0 + grad12(u1,u2)) //
+   12 : macro F21(u1,u2) (0.0 + grad21(u1,u2))  )   (0.0 + grad21(u1,u2)) //
+   13 : macro F22(u1,u2) (1.0 + grad22(u1,u2))  )   (1.0 + grad22(u1,u2)) //
+   14 : // Components Green-Lagrange strain tensor E
+   15 : macro E11(u1,u2) 0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad11(u1,u2) + 2.*grad11(u1,u2) + grad21(u1,u2)*grad21(u1,u2)) //
+   16 : macro E12(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+   17 : macro E21(u1,u2) 0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2))  )   0.5*(grad11(u1,u2)*grad12(u1,u2) + grad21(u1,u2)*grad22(u1,u2) + grad12(u1,u2) + grad21(u1,u2)) //
+   18 : macro E22(u1,u2) 0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2))  )   0.5*(grad12(u1,u2)*grad12(u1,u2) + 2.*grad22(u1,u2) + grad22(u1,u2)*grad22(u1,u2)) //
+   19 : // Trace of Green-Lagrange tensor
+   20 : macro traceE(u1,u2)	(E11(u1,u2) + E22(u1,u2))
+   21 #  )  	(E11(u1,u2) + E22(u1,u2))
+   22 : // J: determinant of F
+   23 : macro detF(u1,u2) (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )
+   24 #  )   (F11(u1,u2) * F22(u1,u2) - F12(u1,u2) * F21(u1,u2) )
+   25 : //Right Cauchy-Green deformation tensor C
+   26 : macro C11(u1,u2) (2*E11(u1,u2) + 1.0)  )   (2*E11(u1,u2) + 1.0) //
+   27 : macro C12(u1,u2) (2*E12(u1,u2))  )   (2*E12(u1,u2)) //
+   28 : macro C21(u1,u2) (2*E21(u1,u2))  )   (2*E21(u1,u2)) //
+   29 : macro C22(u1,u2) (2*E22(u1,u2) + 1.0)  )   (2*E22(u1,u2) + 1.0) //
+   30 : // determinantof C
+   31 : macro detC(u1,u2) (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2))
+   32 #  )   (C11(u1,u2) * C22(u1,u2) - C12(u1,u2) * C21(u1,u2))
+   33 : //Inverse of C: C^-1 (symmetric)
+   34 : macro invC11(u1,u2) (1/detC(u1,u2) * (C22(u1,u2)))  )   (1/detC(u1,u2) * (C22(u1,u2))) //
+   35 : macro invC12(u1,u2) (1/detC(u1,u2) * ((-1)* C12(u1,u2)))  )   (1/detC(u1,u2) * ((-1)* C12(u1,u2))) //
+   36 : macro invC21(u1,u2) (1/detC(u1,u2) * ((-1)* C21(u1,u2)))  )   (1/detC(u1,u2) * ((-1)* C21(u1,u2))) //
+   37 : macro invC22(u1,u2) (1/detC(u1,u2) * (C11(u1,u2)))  )   (1/detC(u1,u2) * (C11(u1,u2))) //
+   38 : // Second Piola-Kirchhoff stress tensor for Phi4 Sij forse non serve ...
+   39 : // Dijkl = - d(Cij^-1)/dEkl
+   40 : macro D1111(u1,u2) (invC11(u1,u2)*invC11(u1,u2) * 2 )  )   (invC11(u1,u2)*invC11(u1,u2) * 2 ) //
+   41 : macro D1211(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 )  )   (invC11(u1,u2)*invC21(u1,u2) * 2 ) // = D1121, D1112, D2111 for symmetry of C,invC and E
+   42 : macro D1121(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 )  )   (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
+   43 : macro D1112(u1,u2) (invC11(u1,u2)*invC12(u1,u2) * 2 )  )   (invC11(u1,u2)*invC12(u1,u2) * 2 ) //
+   44 : macro D2111(u1,u2) (invC11(u1,u2)*invC21(u1,u2) * 2 )  )   (invC11(u1,u2)*invC21(u1,u2) * 2 ) //
+   45 : macro D1122(u1,u2) (invC12(u1,u2)*invC12(u1,u2) * 2 )  )   (invC12(u1,u2)*invC12(u1,u2) * 2 ) // = D2211
+   46 : macro D2211(u1,u2) (invC21(u1,u2)*invC21(u1,u2) * 2 )  )   (invC21(u1,u2)*invC21(u1,u2) * 2 ) //
+   47 : macro D1212(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) // = D2121, D1221, D2112
+   48 : macro D2121(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   49 : macro D1221(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   50 : macro D2112(u1,u2) (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2))  )   (invC11(u1,u2)*invC22(u1,u2) + invC12(u1,u2)*invC21(u1,u2)) //
+   51 : macro D2122(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 )  )   (invC22(u1,u2)*invC12(u1,u2) * 2 ) // = D2212, D2221, D1222
+   52 : macro D2212(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 )  )   (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+   53 : macro D2221(u1,u2) (invC22(u1,u2)*invC21(u1,u2) * 2 )  )   (invC22(u1,u2)*invC21(u1,u2) * 2 ) //
+   54 : macro D1222(u1,u2) (invC22(u1,u2)*invC12(u1,u2) * 2 )  )   (invC22(u1,u2)*invC12(u1,u2) * 2 ) //
+   55 : macro D2222(u1,u2) (invC22(u1,u2)*invC22(u1,u2) * 2 )  )   (invC22(u1,u2)*invC22(u1,u2) * 2 ) //
+   56 : //dEij(u1,u2)/du * lambda
+   57 : macro gradE11 (u1,u2,l1,l2) (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2))  )   (grad11(u1,u2)*grad11(l1,l2) + grad21(u1,u2)*grad21(l1,l2) + grad11(l1,l2)) //
+   58 : macro gradE12 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) ) )   (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )// vanno aggiunti dopo come termine noto
+   59 : macro gradE21 (u1,u2,l1,l2) (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )   )   (0.5*(grad11(u1,u2)*grad12(l1,l2) + grad21(u1,u2)*grad22(l1,l2) + grad12(u1,u2)*grad11(l1,l2) + grad22(u1,u2)*grad21(l1,l2) + grad12(l1,l2) + grad21(l1,l2)) )  // vanno aggiunti dopo come termine noto
+   60 : macro gradE22 (u1,u2,l1,l2) (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2))  )   (grad12(u1,u2)*grad12(l1,l2) + grad22(u1,u2)*grad22(l1,l2) + grad22(l1,l2)) //
+   61 : //d^2 Eij(u1,u2)/du^2*lambda * [phi1,phi2] (test function)
+   62 : macro grad2E11 (phi1,phi2,l1,l2) (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2))  )   (grad11(phi1,phi2)*grad11(l1,l2) + grad21(phi1,phi2)*grad21(l1,l2)) //
+   63 : macro grad2E12 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2)))  )   (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+   64 : macro grad2E21 (phi1,phi2,l1,l2) (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2)))  )   (0.5*(grad11(phi1,phi2)*grad12(l1,l2) + grad21(phi1,phi2)*grad22(l1,l2) + grad12(phi1,phi2)*grad11(l1,l2) + grad22(phi1,phi2)*grad21(l1,l2))) //
+   65 : macro grad2E22 (phi1,phi2,l1,l2) (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2))  )   (grad12(phi1,phi2)*grad12(l1,l2) + grad22(phi1,phi2)*grad22(l1,l2)) //
+   66 : 
+    9 : include "params_load.edp"// ***************************************************************************
+    2 : // Params
+    3 : // ***************************************************************************
+    4 : 
+    5 : // Vettore per il salvataggio delle immagini in formato vtk (da usare in Paraview)
+    6 : int[int] ffordervel = [1];
+    7 : 
+    8 : // Load
+    9 : int ld = 1;
+   10 : string path = "results/2021-05-03_12-23-51/";
+   11 : int idxld = 2;
+   12 : 
+   13 : if(ld) {
+   14 : mesh Th = readmesh(path+"mesh_initial.msh");
+   15 : plot(Th, wait=0, cmm="Loaded mesh");
+   16 : }
+   17 : 
+   18 : // Params
+   19 : real nu12;
+   20 : real nu = 0.3;
+   21 : real E = 1.;
+   22 : real L = E*nu/(1-nu^2);
+   23 : real M = E/(2*(1+nu));
+   24 : real d1 = 0.3;        // u traction given
+   25 : real vf = 0.4;       // volume fraction
+   26 : real nutarget = -1.0; // nu target
+   27 : 
+   28 : // Density space
+   29 : fespace Xhp(Th, The Identifier Th does not exist 
+
+ Error line number 29, in file params_load.edp, before  token ,
+
+  current line = 29
+Compile error : 
+	line number :29, ,
+error Compile error : 
+	line number :29, ,
+ code = 1 mpirank: 0

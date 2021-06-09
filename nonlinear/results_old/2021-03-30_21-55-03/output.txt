@@ -1,0 +1,87 @@
+-- FreeFem++ v  3.610001 (date Mon Mar 23 07:06:46 UTC 2020)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+ load: iovtk 
+ sizestack + 1024 =339240  ( 338216 )
+
+  -- Square mesh : nb vertices  =2601 ,  nb triangles = 5000 ,  nb boundary edges 200
+
+
+*********************************************
+case1_nonlinear.edp - Params
+*********************************************
+Mesh size: 50 x 50
+nu: 0.3
+lambda: 0.32967
+mu: 0.384615
+Young modulus: 1
+-----
+Given horizontal traction on R: 0.01
+nu target: -1
+Volume fraction: 0.4
+-----
+Initial density: hard-coded
+-----
+IPOPT max iterations: 40
+-----
+Power law: 1
+q: 1
+qmax: 3
+-----
+Helmholtz filtering: 0
+-----
+Heaviside filtering: 0
+-----
+Mesh adaptivity: 0
+-----
+Sigmund filtering: 1
+beta: 4
+eta: 0.4
+-----
+Main cycle max iterations: 6
+
+
+*********************************************
+case1_nonlinear.edp - Solution
+*********************************************
+
+IPOPT Note : No hessian given ==> LBFGS hessian approximation enabled
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+This is Ipopt version 3.11.9, running with linear solver mumps.
+NOTE: Other linear solvers might be more efficient (see Ipopt documentation).
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:     2601
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+*********************************************
+PRIMAL PROBLEM ...
+Newton iteration 1
+  -- Solve : 
+          min -0.00447515  max 0.00447494
+Newton iteration 2
+  -- Solve : 
+          min -0.000287574  max 0.000228263
+Newton iteration 3
+  -- Solve : 
+          min -0.000173774  max 0.000173211
+Newton iteration 4
+  -- Solve : 
+          min -4.91785e-07  max 2.78476e-07
+Newton iteration 5
+  -- Solve : 
+          min -2.96803e-10  max 2.9416e-10
+Newton iteration 6
+  -- Solve : 
+          min -4.86389e-18  max 8.46708e-18
+POISSON'S RATIO = 0.0267893
+*********************************************
+*********************************************
+DUAL PROBLEM ...
+  -- Solve : 
+          min -469949  max 2.85914e+08
