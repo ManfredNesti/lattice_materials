@@ -1,10 +1,10 @@
 # Topology optimization of lattice materials with nonlinear elasticity law
-Project repository for *Numerical Analysis for Partial Differential Equations*. A.Y. 2020-2021
+Project repository for *Numerical Analysis for Partial Differential Equations* - A.Y. 2020-2021
 
 - Teresa Babini (teresa.babini@mail.polimi.it)
 - Manfred Nesti (manfred.nesti@mail.polimi.it)
 
-For the implementation we used `FreeFem++`, which is an open source programming language based on `C++`, focused on solving partial differential equations using the finite element method. To install `FreeFem++` and for the documentation you can refer to [`FreeFem++` documentation](https://doc.freefem.org/documentation/index.html).
+For the implementation we used `FreeFem++`, which is an open source programming language based on `C++`, focused on solving partial differential equations using the finite element method. To install `FreeFem++` and for the documentation you can refer to [FreeFem++ documentation](https://doc.freefem.org/documentation/index.html).
 
 ## Nonlinear method
 
