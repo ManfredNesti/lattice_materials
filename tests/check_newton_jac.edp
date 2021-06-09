@@ -4,8 +4,8 @@
 outjac << "--- Check Newton jacobian for d1 = " << d1 << " ---" << endl;
 real eps = 1e-4;
 [u,v] = [x, 0]; // trial u
-[du,dv] = [sin(2*pi*x)*sin(2*pi*y), sin(2*pi*x)*sin(2*pi*y)];   // trial du
-varf Jac ([dummy1,dummy2],[w1,w2]) = int2d(Th) (L* (2.0*detF(u,v)-1.) * (dx(w1)*F22(u,v) + dy(w2)*F11(u,v) - dy(w1)*F21(u,v) - dx(w2)*F12(u,v))
+[du,dv] = [sin(2 * pi * x) * sin(2 * pi * y), sin(2 * pi * x) * sin(2 * pi * y)];   // trial du
+varf Jac ([dummy1,dummy2],[w1,w2]) = int2d(Th) (L * (2.0 * detF(u,v) - 1.) * (dx(w1) * F22(u,v) + dy(w2) * F11(u,v) - dy(w1) * F21(u,v) - dx(w2) * F12(u,v))
                                      * (invC11(u,v) * gradE11(u,v,du,dv) + invC12(u,v) * gradE12(u,v,du,dv)
                                       + invC21(u,v) * gradE21(u,v,du,dv) + invC22(u,v) * gradE22(u,v,du,dv))
                  + L* (detF(u,v)-1) * detF(u,v) * ( - D1111(u,v) * gradE11(u,v,w1,w2) * gradE11(u,v,du,dv)
@@ -32,10 +32,10 @@ varf Jac ([dummy1,dummy2],[w1,w2]) = int2d(Th) (L* (2.0*detF(u,v)-1.) * (dx(w1)*
                       gradE22(u,v,w1,w2) * gradE22(u,v,du,dv) + E22(u,v) * grad2E22(w1,w2,du,dv) )
           );
 
-Vh [upos,vpos] = [u + eps*du, v + eps*dv];
-Vh [uneg,vneg] = [u - eps*du, v - eps*dv];
+Vh [upos,vpos] = [u + eps * du, v + eps * dv];
+Vh [uneg,vneg] = [u - eps * du, v - eps * dv];
 
-varf rhs1([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(uneg,vneg)*(detF(uneg,vneg)-1.) *
+varf rhs1([dummy1,dummy2],[w1,w2]) = int2d(Th) (L * detF(uneg,vneg) * (detF(uneg,vneg) - 1.) *
                                                      (invC11(uneg,vneg) * gradE11(uneg,vneg,w1,w2)
                                                     + invC12(uneg,vneg) * gradE12(uneg,vneg,w1,w2)
 															                      + invC21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
@@ -45,7 +45,7 @@ varf rhs1([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(uneg,vneg)*(detF(uneg,vne
                                                + E21(uneg,vneg) * gradE21(uneg,vneg,w1,w2)
                                                + E22(uneg,vneg) * gradE22(uneg,vneg,w1,w2))
                                                );
-varf rhs2([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(upos,vpos)*(detF(upos,vpos)-1.) *
+varf rhs2([dummy1,dummy2],[w1,w2]) = int2d(Th) (L * detF(upos,vpos) * (detF(upos,vpos) - 1.) *
                                                     (invC11(upos,vpos) * gradE11(upos,vpos,w1,w2)
                                                    + invC12(upos,vpos) * gradE12(upos,vpos,w1,w2)
                                                    + invC21(upos,vpos) * gradE21(upos,vpos,w1,w2)
@@ -59,8 +59,8 @@ varf rhs2([dummy1,dummy2],[w1,w2]) = int2d(Th) (L*detF(upos,vpos)*(detF(upos,vpo
 real[int] RHS1 = rhs1(0,Vh);
 real[int] RHS2 = rhs2(0,Vh);
 RHS2 = RHS2 - RHS1;
-RHS2 = (2*eps)^(-1)*RHS2;
+RHS2 = (2 * eps)^(-1) * RHS2;
 real[int] JAC = Jac(0,Vh);
-for (int i=JAC.n-5; i<JAC.n; i++) outjac << "RHS(i) = " << RHS2[i] << " " << "JAC(i) = " << JAC[i] << endl;
+for (int i=JAC.n-5; i < JAC.n; i++) outjac << "RHS(i) = " << RHS2[i] << " " << "JAC(i) = " << JAC[i] << endl;
 RHS1 = RHS2 - JAC;
 outjac << "||RHS - JAC||_inf = " << RHS1.linfty << endl << endl;

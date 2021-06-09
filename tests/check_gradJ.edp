@@ -36,7 +36,7 @@ Xhp rhopos = rho + eps * drho;
 Xhp rhoneg = rho - eps * drho;
 
 fespace Vh(Th, [P1, P1]);
-Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2],    [l1, l2], [phi1, phi2];
+Vh [u1,u2], [u10,u20], [psi1,psi2], [varu1,varu2], [err1,err2], [l1, l2], [phi1, phi2];
 
 // ***************************************************************************
 // Residual for Newton method
@@ -49,7 +49,7 @@ func real errorL2() {
  real erru = int2d(Th)(err1^2 + err2^2);
  real normu = int2d(Th)(u10^2 + u20^2);
  // return error estimate (stopping criterion)
- return sqrt(erru / (normu+1e-15));
+ return sqrt(erru / (normu + 1e-15));
 }
 
 // ***************************************************************************
@@ -122,7 +122,7 @@ out << " JJ = " << JJ << endl;
 
 J2 = J2 - J1;
 out << " J2 - J1 = " << J2 << endl;
-J2 = (2*eps)^(-1)*J2;
+J2 = (2 * eps)^(-1) * J2;
 out << " (J2 - J1) / (2 * eps) = " << J2 << endl << endl;
 
 real[int] gradientJ = gradJ(rho[]);
