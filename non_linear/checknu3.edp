@@ -81,7 +81,7 @@ if (checkLaplacepb)
 //Compute nu Poisson coefficient to check our results
 //Solve primal problem: with v2, on Th1
 
-fespace Vh2(Th1, [P1, P1], periodic = [[2,y], [4,y]]);
+fespace Vh2(Th1, [P1, P1]);
 Vh2 [u21,u22], [u210,u220], [varu21, varu22], [psi21, psi22], [err21,err22];
 
 // fespace Vh21(Th1, P1);
@@ -127,6 +127,8 @@ problem primallinearized([varu21,varu22], [psi21, psi22]) =
                                  + E21(u210,u220) * gradE21(u210,u220,psi21,psi22)
                                  + E22(u210,u220) * gradE22(u210,u220,psi21,psi22)))
     + on(2,varu21=0) // Dirichlet
+    + on(1,varu22=0)
+    + on(4,varu21=0)
   ;
 
 
@@ -174,9 +176,9 @@ while (loopcount <= loopmax && res >= tol){
     //u220[] = u22[];
 }
 
-cout << "check for d1: " << int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21)<< endl;
+cout << "check for d1: " << 0.5 * (int1d(Th1, 2)(u21) - int1d(Th1, 4)(u21))<< endl; ///mean a t the boundary-> now has length 2!
 
-real d2 = int1d(Th1,3)(u22) - int1d(Th1,1)(u22);
+real d2 = 0.5 * int1d(Th1,3)(u22);
 nu12 = - d2 / d1; // estimated nu
 
 cout << "FINAL POISSON'S RATIO = " << nu12 << endl;
@@ -189,5 +191,6 @@ cout << "*********************************************" << endl;
   real minarea = checkmovemesh(Th1, [x+ coef * u21, y+coef * u22]);
   if (minarea > 0) {// movemesh will be ok
     mesh th1 = movemesh(Th1, [x + coef * u21, y + coef * u22]);
-    plot(Th1, th1, wait = 1, cmm = "d1 = "+d1);
+    plot(Th1, wait = 1, cmm = "initial  ");
+    plot(th1, wait = 1, prev = true, cmm = "d1 = "+d1);
   } else cout << "MOVEMESH ERROR: Min area = " << minarea << endl;
