@@ -18,14 +18,14 @@ if(ld) { // load a mesh
 }
 
 // Params
-real nu12;                        // estimated nu
-real nu = 0.3;                    // nu of the material
+real nu12;                        // estimated Poisson's ratio
+real nu = 0.3;                    // Poisson's ratio of the material
 real E = 1.;                      // Young's modulus of the material
 real L = E * nu / (1 - nu ^ 2);   // lambda Lamé coefficient of the material
 real M = E / (2 * (1 + nu));      // mu Lamé coefficient of the material
 real d1 = 0.3;                    // u traction given
 real vf = 0.4;                    // allowable volume fraction
-real nutarget = -1.0;             // nu target
+real nutarget = -1.0;             // Poisson's ratio target
 
 // Density space
 fespace Xhp(Th,P1);
@@ -100,9 +100,8 @@ int heav = 0;           // 1: for to use Heaviside filter, 0: otherwise
 // Main params
 int maxit = 6;          // maximum number of iteration of the main cycle
 
-// Hyperbolic tangent
-// filter of Sigmund
-int sig = 1;            // 1: for to use the Sigmund filter, 0: otherwise
+// Hyperbolic tangent filter of Sigmund
+int sig = 1;            // 1: to use the Sigmund filter, 0: otherwise
 real beta0 = 3.5;       // starting beta coefficient
 real eta0 = 0.45;       // starting eta coefficient
 real betaincr = 1;      // beta increment at each main cycle iteration

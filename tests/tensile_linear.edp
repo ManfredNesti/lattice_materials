@@ -66,7 +66,7 @@ for (real u = ustart; u <= ufinal; u += uincr) {
   plot(Th, Thd, wait = 1, cmm = "u="+u);
 
   // ***************************************************************************
-  // Estimation of nu using convect
+  // Estimate of nu using convect
   // ***************************************************************************
   real d1conv = int1d(Th, 2)(u1 - convect([ax, ay], -1, u1));
   real d2conv = int1d(Th, 3)(u2 - convect([bx, by], -1, u2));
