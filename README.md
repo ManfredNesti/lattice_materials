@@ -41,7 +41,7 @@ This is the main script which is called by `run.sh`. It includes all the necessa
 
 During the implementation phase we started from scratch by some simple cases and tests, in order to test step-by-step our work and validate the model. In `tests/` you can find the material related to this topic. This is the graph showing the dependencies between files.
 
-DOT FILE
+<img src='https://g.gravizo.com/svg?digraph%20G%20%7B%0A%20%20subgraph%20cluster_linear%20%7B%0A%20%20%20%20label%20%3D%20%22Linear%22%0A%20%20%20%20%22tensile_linear.edp%22%3B%0A%20%20%20%20edge%20%5Bstyle%20%3D%20dashed%5D%0A%20%20%20%20%22tensile_linear.edp%22%20-%3E%20%22tensile_linear.csv%22%3B%0A%20%20%7D%0A%0A%20%20subgraph%20cluster_nonlinear%20%7B%0A%20%20%20%20label%20%3D%22Non%20linear%22%0A%20%20%20%20%22tensile_nonlinear_FF.edp%22%3B%0A%20%20%20%20%22tensile_nonlinear_KS.edp%22%20-%3E%20%22check_newton_jac.edp%22%5Bconstraint%20%3D%20false%5D%3B%0A%20%20%20%20%22check_gradJ.edp%22%3B%0A%20%20%20%20edge%20%5Bstyle%20%3D%20dashed%5D%0A%20%20%20%20%22tensile_nonlinear_FF.edp%22%20-%3E%20%22tensile_nonlinear_FF.csv%22%3B%0A%20%20%20%20%22tensile_nonlinear_KS.edp%22%20-%3E%20%22newton_convergence.csv%22%3B%0A%20%20%20%20%22tensile_nonlinear_KS.edp%22%20-%3E%20%22tlinear_consistency.csv%22%3B%0A%20%20%20%20%22check_newton_jac.edp%22%20-%3E%20%22check_newton_jacobian.txt%22%3B%0A%20%20%20%20%22check_gradJ.edp%22%20-%3E%20%22check_gradJ.txt%22%3B%0A%20%20%7D%0A%7D%0A'>
 
 - **`tensile_linear.edp`**:
 The first thing we did was to develop a simple tensile problem in which a rectangular full 2D material (density equal to 1 everywhere) is stretched on the right boundary, free-movement condition characterize top boundary and symmetric BCs are imposed on the other boundaries.
