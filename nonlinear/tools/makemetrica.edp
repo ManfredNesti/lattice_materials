@@ -1,0 +1,225 @@
+//verbosity=0;
+
+func real makemetrica(real toll)
+{
+	include "adaptmesh/sparse2full.edp";
+	include "adaptmesh/makepatch.edp";
+
+	Xh0 vol=area;
+	Xh0 dxv,dyv;
+	dxv=dx(v);
+	dyv=dy(v);
+	Xh0 estimatex,estimatey,estimateloc;
+
+	int ne = Th.nt;
+	int nv = Th.nv;
+
+	real omega=1.0;
+	real lam1star,lam2star;
+	real px,py;
+	real Ex,Ey;
+	real vpatch;
+	real traccia,determ,s1,s2,a1,a2,a,sK,emax,emin,lm,sKstar,prodlam;
+	real eps=2.220446049250313e-16;
+	real maxstretch = 1e3;
+
+	int [int] nextK(ne);			//per ogni k, nextK(k) contiene il numero di elementi del patch di k;
+	real[int] lam1K(ne),lam2K(ne); //autovalori delle MK
+	real[int] Volpatchvertex(nv); //volume del patch dell' i-esimo nodo
+
+	int [int,int] patch(ne,100); //per ogni k(riga), le colonne sono i trinagoli del patch del tetraedro k
+	real[int,int] GK(2,2),MK(2,2);
+	real[int,int] Mfull(2,2),MMfull(2,2),Ufull(2,2),Vfull(2,2);  //versione full di M
+	real [int,int] r1K(2,ne), r2K(2,ne);  // x autovettori delle MK
+	real [int,int] r1Kstar(2,ne), r2Kstar(2,ne);
+	real[int,int] Mstar(2,2);
+	real[int,int] metricaold(3,nv),metrica(3,nv);
+
+	matrix M,MM,U,V;
+
+	nextK = 1;
+	makepatch(patch,nextK);
+
+	metrica=0;
+	metricaold=0;
+	Volpatchvertex=0;
+
+// Ricostruzione gradiente
+
+	for (int k = 0; k < ne; k++) //loop sui tetraedri
+	{
+	GK=0;
+	MK=0;
+	Mstar=0;
+	px=0;
+	py=0;
+	vpatch=0;
+	for(int j=0;j<nextK(k);j++){			//loop sul patch del k-esimo tetraedro
+		px+=dxv[][patch(k,j)]*vol[][patch(k,j)];
+		py+=dyv[][patch(k,j)]*vol[][patch(k,j)];
+		vpatch+=vol[][patch(k,j)];
+		}//fine loop patch
+	px=px/vpatch;
+	py=py/vpatch;
+
+// Fine ricostruzione gradiente
+
+// Stimatore errore (seminorma H1)
+
+	for (int j = 0; j < nextK(k); j++)	//loop sul patch del k-esimo tetraedro
+	  {
+	  Ex = px-dxv[][patch(k,j)];
+	  Ey = py-dyv[][patch(k,j)];
+	  GK(0,0) +=Ex*Ex*vol[][patch(k,j)];
+      GK(0,1) +=Ex*Ey*vol[][patch(k,j)];
+	  GK(1,1) +=Ey*Ey*vol[][patch(k,j)];
+	  }//fine loop patch
+
+		//Gk è simmetrica
+		GK(1,0) = GK(0,1);
+		GK = vpatch^(-1)*GK;
+
+	estimatex[][k]=px-dxv[][k];
+	estimatey[][k]=py-dyv[][k];
+
+// Fine stimatore errore (seminorma H1)
+
+
+
+	M= [[(Th[k][1].x-Th[k][0].x)/sqrt(3.), (2*Th[k][2].x-Th[k][0].x-Th[k][1].x)/3],
+         [(Th[k][1].y-Th[k][0].y)/sqrt(3.), (2*Th[k][2].y-Th[k][0].y-Th[k][1].y)/3]
+        ];
+	Mfull=sparse2full(M,3);
+
+	MM = M*M';
+    // [U,S,V] = svd(M);
+    MMfull = sparse2full(MM,2);
+    traccia = MMfull(0,0) + MMfull(1,1);
+    determ  = MMfull(0,0)*MMfull(1,1) - MMfull(0,1)^2;
+    s1    = (traccia + sqrt(traccia^2 - 4*determ))/2;
+    s2    = determ/s1;
+    lam1K(k) = sqrt(s1);
+    lam2K(k) = sqrt(s2);
+
+	if (MMfull(0,1) == 0) U = [[1, 0],[0, 1]];
+    else
+    {
+      a1 = 1;
+      a2 = (s1 - MMfull(0,0))/MMfull(0,1);
+      a  = sqrt(1 + a2^2);
+      //cout << "lam1K = " << lam1K << endl;
+      //cout << "lam2K = " << lam2K << endl;
+      //cout << "a     = " << a    << endl;
+      U = [[a1/a, -a2/a], [a2/a, a1/a]];
+    }
+    Ufull    = sparse2full(U,2);
+    r1K(0,k) = Ufull(0,0);
+    r1K(1,k) = Ufull(1,0);
+
+	r2K(0,k) = Ufull(0,1);
+    r2K(1,k) = Ufull(1,1);
+
+
+	MK =  1./lam1K(k)^2*r1K(0:2,k)*r1K(0:2,k)';
+	MK += 1./lam2K(k)^2*r2K(0:2,k)*r2K(0:2,k)';
+	sK = lam1K(k)/lam2K(k);
+
+	// eig di GK: [V,E] = eig(GK);
+    traccia = GK(0,0) + GK(1,1);
+    determ  = GK(0,0)*GK(1,1) - GK(0,1)^2;
+    // ci cauteliamo contro valori nulli, troppo piccoli, o negativi degli autovalori
+
+	s1 = (traccia + sqrt(traccia^2 - 4*determ))/2;
+    s2 = (traccia - sqrt(traccia^2 - 4*determ))/2;
+
+	emax = max(s1,eps);
+    emin = max(s2,eps);
+
+	if (GK(0,1) == 0) V = [[1, 0],[0, 1]];
+    else
+    {
+      a1 = 1;
+      a2 = (s2 - GK(0,0))/GK(0,1);
+      a  = sqrt(1 + a2^2);
+      V = [[a1/a, -a2/a], [a2/a, a1/a]];
+    }
+    Vfull = sparse2full(V,2);
+    r1Kstar(0,k) = Vfull(0,0);
+    r1Kstar(1,k) = Vfull(1,0);
+    r2Kstar(0,k) = Vfull(0,1);
+    r2Kstar(1,k) = Vfull(1,1);
+
+	lm = 10*eps*emin;
+    emin = emin*(emin > lm) + lm*(emin <= lm);
+    emax = emax*(emin > lm) + lm*(emin <= lm);
+    sKstar = min(sqrt(emax/emin),maxstretch);
+	//cout << sKstar << endl;
+	maxsK = max(sKstar, maxsK);
+	//cout << maxsK << endl;
+
+	// prodotto di lam1_star e lam2_star
+    prodlam = (toll/(sqrt(sKstar*emin+1/sKstar*emax)))^(2./3);
+
+	// il quoziente e' sK
+    // ci cauteliamo contro valori troppo piccoli o troppo grandi ??
+    lam1star = sqrt(prodlam*sKstar);
+    lam2star = sqrt(prodlam/sKstar);
+
+	Mstar  = 1./lam1star^2*r1Kstar(0:1,k)*r1Kstar(0:1,k)';
+    Mstar += 1./lam2star^2*r2Kstar(0:1,k)*r2Kstar(0:1,k)';
+
+	////////////////////////////////
+	//METRICA CORRENTE GLOBALE
+	//////////////////////////////
+	metricaold(0,Th[k][0]) += vol[][k]*MK(0,0);
+    metricaold(0,Th[k][1]) += vol[][k]*MK(0,0);
+    metricaold(0,Th[k][2]) += vol[][k]*MK(0,0);
+	metricaold(1,Th[k][0]) += vol[][k]*MK(0,1);
+    metricaold(1,Th[k][1]) += vol[][k]*MK(0,1);
+    metricaold(1,Th[k][2]) += vol[][k]*MK(0,1);
+    metricaold(2,Th[k][0]) += vol[][k]*MK(1,1);
+    metricaold(2,Th[k][1]) += vol[][k]*MK(1,1);
+    metricaold(2,Th[k][2]) += vol[][k]*MK(1,1);
+
+
+	metrica(0,Th[k][0]) += vol[][k]*Mstar(0,0);
+    metrica(0,Th[k][1]) += vol[][k]*Mstar(0,0);
+    metrica(0,Th[k][2]) += vol[][k]*Mstar(0,0);
+    metrica(1,Th[k][0]) += vol[][k]*Mstar(0,1);
+    metrica(1,Th[k][1]) += vol[][k]*Mstar(0,1);
+    metrica(1,Th[k][2]) += vol[][k]*Mstar(0,1);
+    metrica(2,Th[k][0]) += vol[][k]*Mstar(1,1);
+	metrica(2,Th[k][1]) += vol[][k]*Mstar(1,1);
+    metrica(2,Th[k][2]) += vol[][k]*Mstar(1,1);
+
+	Volpatchvertex(Th[k][0]) += vol[][k];
+    Volpatchvertex(Th[k][1]) += vol[][k];
+    Volpatchvertex(Th[k][2]) += vol[][k];
+	}//FINE LOOP SUI K
+	cout<<endl<<"STIMATOREx== "<<estimatex[].max<<endl;
+	cout<<endl<<"STIMATOREy== "<<estimatey[].max<<endl;
+
+
+	for (int i = 0; i < nv; i++) //LOOP SUI VERTICI
+	{
+	metricaold(0,i) = metricaold(0,i)/Volpatchvertex(i);
+    metricaold(1,i) = metricaold(1,i)/Volpatchvertex(i);
+    metricaold(2,i) = metricaold(2,i)/Volpatchvertex(i);
+
+    metrica   (0,i) = metrica(0,i)/Volpatchvertex(i);
+    metrica   (1,i) = metrica(1,i)/Volpatchvertex(i);
+    metrica   (2,i) = metrica(2,i)/Volpatchvertex(i);
+
+	m11[][i] = (omega*metrica(0,i) + (1-omega)*metricaold(0,i))/3;
+    m12[][i] = (omega*metrica(1,i) + (1-omega)*metricaold(1,i))/3;
+    m22[][i] = (omega*metrica(2,i) + (1-omega)*metricaold(2,i))/3;
+
+	}//FINE LOOP SUI VERTICI
+
+	metricaold = 3.^-1*metricaold;
+	metrica    = 3.^-1*omega*metrica + (1-omega)*metricaold;
+
+
+
+
+}
