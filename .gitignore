@@ -7,3 +7,5 @@ trash/
 references/
 linear/
 nonlinear/adaptmesh/
+
+*.tex

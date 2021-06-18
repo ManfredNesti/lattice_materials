@@ -1,0 +1,22 @@
+digraph tests {
+rankdir=LR;
+subgraph cluster_linear {
+label = "Linear"
+"tensile_linear.edp";
+edge [style = dashed]
+"tensile_linear.edp" -> "tensile_linear.csv";
+}
+
+subgraph cluster_nonlinear {
+label ="nonlinear"
+"tensile_nonlinear_FF.edp";
+"tensile_nonlinear_KS.edp" -> "check_newton_jac.edp"[constraint = false];
+"check_gradJ.edp";
+edge [style = dashed]
+"tensile_nonlinear_FF.edp" -> "tensile_nonlinear_FF.csv";
+"tensile_nonlinear_KS.edp" -> "newton_convergence.csv";
+"tensile_nonlinear_KS.edp" -> "tlinear_consistency.csv";
+"check_newton_jac.edp" -> "check_newton_jacobian.txt";
+"check_gradJ.edp" -> "check_gradJ.txt";
+}
+}
